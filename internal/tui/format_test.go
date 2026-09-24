@@ -101,12 +101,9 @@ func TestBuildRowsRepeatsHeaderWhenNotContiguous(t *testing.T) {
 	}
 }
 
-// Degradé del logo en la paleta de Claude Code: durazno → terracota.
-func TestGradColorClaudePalette(t *testing.T) {
-	cases := map[float64]string{0: "#f0a882", 1: "#c15f3c"}
-	for pos, want := range cases {
-		if got := gradColor(pos); got != want {
-			t.Errorf("gradColor(%v) = %q, want %q", pos, got, want)
-		}
+// Logo en el naranja de Claude Code, sin degradé.
+func TestLogoColorIsClaudeOrange(t *testing.T) {
+	if logoColor != "#d97757" {
+		t.Fatalf("logoColor = %q", logoColor)
 	}
 }
