@@ -358,9 +358,9 @@ func (m *Model) save() {
 	}
 }
 
-// listHeight: alto total menos título, separador, detalle y ayuda.
+// listHeight: alto total menos header, separador, detalle y ayuda.
 func (m *Model) listHeight() int {
-	if h := m.height - 4; h > 0 {
+	if h := m.height - m.headerLines() - 3; h > 0 {
 		return h
 	}
 	return 1

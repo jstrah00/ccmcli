@@ -28,13 +28,9 @@ func (m Model) View() string {
 		return ""
 	}
 	var b strings.Builder
-	head := " ccm"
-	if m.mode == filtering {
-		head += "   /" + m.filter + "▏"
-	} else if m.filter != "" {
-		head += "   /" + m.filter
+	for _, l := range m.header() {
+		b.WriteString(l + "\n")
 	}
-	b.WriteString(styleTitle.Render(fit(head, m.width)) + "\n")
 
 	if len(m.list) == 0 {
 		b.WriteString(styleDim.Render(fit("  sin sesiones de Claude Code", m.width)) + "\n")

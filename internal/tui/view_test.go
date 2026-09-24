@@ -118,3 +118,91 @@ func TestViewAfterQuitIsEmpty(t *testing.T) {
 		t.Fatalf("View tras q = %q", v)
 	}
 }
+
+func lines(v string) []string { return strings.Split(v, "\n") }
+
+func states4() (*harness, Model) {
+	w := mk("a", 1, "w")
+	w.State = state.Waiting
+	d1 := mk("a", 2, "d1")
+	d1.State = state.Done
+	d2 := mk("a", 3, "d2")
+	d2.State = state.Done
+	k := mk("a", 4, "k")
+	k.State = state.Working
+	return setup(w, d1, d2, k, mk("a", 5, "i"))
+}
+
+func TestHeaderBigShowsLogoAndSummary(t *testing.T) {
+	_, m := states4()
+	l := lines(sized(m, 80, 20).View())
+	if !strings.Contains(l[0], "▄▀▀ ▄▀▀ █▄ ▄█") || !strings.Contains(l[1], "▀▄▄ ▀▄▄ █ ▀ █") {
+		t.Fatalf("falta el logo:\n%s\n%s", l[0], l[1])
+	}
+	if !strings.Contains(l[0], "5 sesiones") {
+		t.Fatalf("falta el total: %q", l[0])
+	}
+	for _, s := range []string{"1 ●", "2 ✓", "1 " + spinnerFrames[0]} {
+		if !strings.Contains(l[1], s) {
+			t.Fatalf("falta %q en el resumen: %q", s, l[1])
+		}
+	}
+	if strings.Contains(l[1], "○") {
+		t.Fatalf("idle no va en el resumen: %q", l[1])
+	}
+	if strings.TrimSpace(l[2]) != "" || strings.TrimSpace(l[3]) != "a" {
+		t.Fatalf("esperaba línea en blanco y encabezado:\n%q\n%q", l[2], l[3])
+	}
+}
+
+func TestHeaderSingular(t *testing.T) {
+	_, m := setup(mk("a", 1, "x"))
+	if v := sized(m, 80, 20).View(); !strings.Contains(v, "1 sesión") || strings.Contains(v, "1 sesiones") {
+		t.Fatalf("singular:\n%s", v)
+	}
+}
+
+func TestHeaderFilterReplacesTotal(t *testing.T) {
+	_, m := states4()
+	m = press(sized(m, 80, 20), "/", "d")
+	l := lines(m.View())
+	if !strings.Contains(l[0], "/d") || strings.Contains(l[0], "sesiones") {
+		t.Fatalf("filtro en el header: %q", l[0])
+	}
+}
+
+func TestHeaderCompactWhenSmall(t *testing.T) {
+	_, m := states4()
+	for _, size := range [][2]int{{80, 13}, {43, 20}} {
+		v := sized(m, size[0], size[1]).View()
+		l := lines(v)
+		if strings.Contains(v, "▄▀▀") || !strings.Contains(l[0], "CCM") {
+			t.Fatalf("%v: esperaba header compacto: %q", size, l[0])
+		}
+		if n := len(l); n != size[1] {
+			t.Fatalf("%v: alto = %d", size, n)
+		}
+	}
+}
+
+func TestHeaderBigKeepsHeightAndWidth(t *testing.T) {
+	_, m := states4()
+	for _, size := range [][2]int{{44, 14}, {80, 20}} {
+		l := lines(sized(m, size[0], size[1]).View())
+		if len(l) != size[1] {
+			t.Fatalf("%v: alto = %d", size, len(l))
+		}
+		for _, line := range l {
+			if w := lipgloss.Width(line); w > size[0] {
+				t.Fatalf("%v: línea de %d columnas: %q", size, w, line)
+			}
+		}
+	}
+}
+
+func TestHeaderShownWhenEmpty(t *testing.T) {
+	_, m := setup()
+	if v := sized(m, 80, 20).View(); !strings.Contains(v, "▄▀▀") || !strings.Contains(v, "0 sesiones") {
+		t.Fatalf("vacío sin header:\n%s", v)
+	}
+}
