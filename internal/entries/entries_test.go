@@ -67,3 +67,19 @@ func TestPurgeDeletesDeadPanes(t *testing.T) {
 		t.Fatalf("after = %+v", after)
 	}
 }
+
+func TestCollectAcceptsVersionNamedBinary(t *testing.T) {
+	ps := []tmux.PaneInfo{
+		{PaneID: "%1", Session: "s", Window: 1, Pane: 1, Command: "claude", Path: "/h/proj"},
+		{PaneID: "%2", Session: "s", Window: 2, Pane: 1, Command: "2.1.280", Path: "/h/proj"},
+		{PaneID: "%3", Session: "s", Window: 3, Pane: 1, Command: "zsh", Path: "/h/proj"},
+		{PaneID: "%4", Session: "s", Window: 4, Pane: 1, Command: "node", Path: "/h/proj"},
+	}
+	es := Collect(ps, nil, titles)
+	if len(es) != 2 {
+		t.Fatalf("esperaba 2 entradas (claude + binario versionado), got %d", len(es))
+	}
+	if es[1].Pane.PaneID != "%2" {
+		t.Fatalf("falta el pane del binario versionado: %+v", es)
+	}
+}

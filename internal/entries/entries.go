@@ -4,6 +4,7 @@ package entries
 
 import (
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"ccm/internal/order"
@@ -26,10 +27,18 @@ type Entry struct {
 
 type TitleSource func(sessionID, path string) transcript.Titles
 
+// El binario nativo de Claude Code se llama por su versión, así que
+// pane_current_command llega como "2.1.280" y no como "claude".
+var versionName = regexp.MustCompile(`^\d+\.\d+\.\d+`)
+
+func isClaude(cmd string) bool {
+	return cmd == "claude" || versionName.MatchString(cmd)
+}
+
 func Collect(panes []tmux.PaneInfo, states map[string]state.Pane, titles TitleSource) []Entry {
 	var out []Entry
 	for _, p := range panes {
-		if p.Command != "claude" {
+		if !isClaude(p.Command) {
 			continue
 		}
 		// La clave usa pane_current_path (no el cwd del estado) para que no
