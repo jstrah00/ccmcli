@@ -9,15 +9,15 @@ import (
 )
 
 func TestParsePanes(t *testing.T) {
-	out := "%1\tmi sesion.v2\t3\t2\tclaude\t/home/u/p\t1\t1\n" +
-		"%2\tb\t1\t1\tzsh\t/tmp\t0\t0\n"
+	out := "%1\tmi sesion.v2\t3\t2\tclaude\t/home/u/p\t1\t1\tmi window\n" +
+		"%2\tb\t1\t1\tzsh\t/tmp\t0\t0\tzsh\n"
 	got, err := ParsePanes(out)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := []PaneInfo{
-		{PaneID: "%1", Session: "mi sesion.v2", Window: 3, Pane: 2, Command: "claude", Path: "/home/u/p", WindowActive: true, SessionAttached: true},
-		{PaneID: "%2", Session: "b", Window: 1, Pane: 1, Command: "zsh", Path: "/tmp"},
+		{PaneID: "%1", Session: "mi sesion.v2", Window: 3, Pane: 2, Command: "claude", Path: "/home/u/p", WindowActive: true, SessionAttached: true, WindowName: "mi window"},
+		{PaneID: "%2", Session: "b", Window: 1, Pane: 1, Command: "zsh", Path: "/tmp", WindowName: "zsh"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v\nwant %+v", got, want)
@@ -25,7 +25,7 @@ func TestParsePanes(t *testing.T) {
 }
 
 func TestParsePanesAttachedCountAboveOne(t *testing.T) {
-	got, err := ParsePanes("%1\ts\t1\t1\tclaude\t/x\t1\t2\n")
+	got, err := ParsePanes("%1\ts\t1\t1\tclaude\t/x\t1\t2\tw\n")
 	if err != nil || !got[0].SessionAttached {
 		t.Fatalf("got %+v, %v", got, err)
 	}

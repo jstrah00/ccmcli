@@ -130,6 +130,32 @@ func TestRunKeepsFieldsWhenInputEmpty(t *testing.T) {
 	}
 }
 
+func TestRunPromptStoresLastPrompt(t *testing.T) {
+	d := deps(t, false)
+	in := `{"session_id":"s1","prompt":"arreglá\n\tel   bug\ndel login"}`
+	if err := Run("prompt", strings.NewReader(in), d); err != nil {
+		t.Fatal(err)
+	}
+	if p := load(t, d); p.LastPrompt != "arreglá el bug del login" {
+		t.Fatalf("LastPrompt = %q", p.LastPrompt)
+	}
+	// ni un prompt inyectado ni otros eventos lo pisan
+	_ = Run("prompt", strings.NewReader(`{"prompt":"<task-notification>x"}`), d)
+	_ = Run("stop", strings.NewReader(input), d)
+	if p := load(t, d); p.LastPrompt != "arreglá el bug del login" {
+		t.Fatalf("LastPrompt pisado: %q", p.LastPrompt)
+	}
+}
+
+func TestRunPromptTruncatesLongPrompt(t *testing.T) {
+	d := deps(t, false)
+	in := fmt.Sprintf(`{"prompt":%q}`, strings.Repeat("ñ", 1000))
+	_ = Run("prompt", strings.NewReader(in), d)
+	if n := len([]rune(load(t, d).LastPrompt)); n != maxPrompt {
+		t.Fatalf("largo = %d, want %d", n, maxPrompt)
+	}
+}
+
 // idle_prompt: CC quedó esperando un prompt nuevo. Corrige estados que
 // quedaron pegados porque Stop no dispara al interrumpir con Esc.
 func TestRunIdlePromptUnsticksState(t *testing.T) {

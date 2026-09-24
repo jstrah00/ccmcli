@@ -81,7 +81,24 @@ func Run(event string, stdin io.Reader, d Deps) error {
 	if in.TranscriptPath != "" {
 		p.TranscriptPath = in.TranscriptPath
 	}
+	if event == "prompt" && in.Prompt != "" {
+		p.LastPrompt = oneLine(in.Prompt)
+	}
 	return d.Store.Save(state.Apply(p, target, d.Now()))
+}
+
+// maxPrompt: runas del último prompt que se guardan; alcanza para una línea
+// de detalle en cualquier popup.
+const maxPrompt = 300
+
+// oneLine colapsa saltos de línea, tabs y espacios repetidos (el prompt se
+// muestra en una sola línea) y lo recorta a maxPrompt runas.
+func oneLine(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if r := []rune(s); len(r) > maxPrompt {
+		s = string(r[:maxPrompt])
+	}
+	return s
 }
 
 // finished: done, o idle si terminó mientras lo mirabas.

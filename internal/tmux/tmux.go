@@ -21,6 +21,7 @@ type PaneInfo struct {
 	Path            string
 	WindowActive    bool
 	SessionAttached bool
+	WindowName      string
 }
 
 type Client interface {
@@ -31,7 +32,7 @@ type Client interface {
 
 // Tab como separador: los nombres de sesión pueden tener espacios.
 const listFormat = "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-	"#{pane_current_command}\t#{pane_current_path}\t#{window_active}\t#{session_attached}"
+	"#{pane_current_command}\t#{pane_current_path}\t#{window_active}\t#{session_attached}\t#{window_name}"
 
 func ParsePanes(out string) ([]PaneInfo, error) {
 	var ps []PaneInfo
@@ -40,7 +41,7 @@ func ParsePanes(out string) ([]PaneInfo, error) {
 			continue
 		}
 		f := strings.Split(line, "\t")
-		if len(f) != 8 {
+		if len(f) != 9 {
 			return nil, fmt.Errorf("línea de list-panes inesperada: %q", line)
 		}
 		w, err := strconv.Atoi(f[2])
@@ -56,6 +57,7 @@ func ParsePanes(out string) ([]PaneInfo, error) {
 			Command: f[4], Path: f[5],
 			WindowActive:    f[6] == "1",
 			SessionAttached: f[7] != "" && f[7] != "0",
+			WindowName:      f[8],
 		})
 	}
 	return ps, nil

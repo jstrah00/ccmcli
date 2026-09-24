@@ -166,14 +166,18 @@ Persistido en `$XDG_STATE_HOME/ccm/order.json` (default `~/.local/state/ccm/`):
  j/k mover · ⏎ ir · / filtrar · dd ocultar · p pegar · U restaurar · q salir
 ```
 
-- Fila: `número · indicador · carpeta (basename del cwd) · título`. El
-  indicador es siempre visible en todas las filas.
+- Fila: `número · indicador · ubicación · título`. Ubicación = `:<window>`
+  + nombre de la window si no es el automático (el comando) + carpeta si
+  difiere del nombre de la sesión. El indicador es siempre visible.
+  (2026-09-24: antes era la carpeta, que casi siempre repetía el encabezado.)
 - **Numeración** global 1..N según `order` (sin contar ocultas).
 - **Encabezados** de sesión tmux, no seleccionables. Se recorre la lista
   ordenada y se emite un encabezado cada vez que cambia la sesión respecto de
   la fila anterior (una sesión puede aparecer más de una vez si sus entradas no
   son contiguas en el orden).
-- **Zona de detalle** (entrada bajo el cursor): último `ai-title` · estado ·
+- **Zona de detalle** (entrada bajo el cursor): último prompt del usuario
+  (lo guarda `ccm hook prompt` en `last_prompt`, en una línea, máx. 300
+  runas; sin él, último `ai-title`) · estado ·
   tiempo desde `since` (`hace 12s`, `hace 3m`, `hace 2h`). `unknown` no muestra
   tiempo.
 - Barra de ayuda fija abajo.

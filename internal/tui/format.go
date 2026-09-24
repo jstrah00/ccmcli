@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
 
+	"ccm/internal/entries"
 	"ccm/internal/state"
 )
 
@@ -65,6 +66,20 @@ func humanSince(d time.Duration) string {
 	default:
 		return fmt.Sprintf("hace %dd", int(d.Hours()/24))
 	}
+}
+
+// location dice dónde está la entrada dentro de su sesión: el índice de la
+// window, su nombre si se lo pusiste (no el automático, que es el comando) y
+// la carpeta si no es la misma que el encabezado de sesión.
+func location(e entries.Entry) string {
+	loc := fmt.Sprintf(":%d", e.Pane.Window)
+	if n := e.Pane.WindowName; n != "" && n != e.Pane.Command {
+		loc += " " + n
+	}
+	if e.Folder != e.Pane.Session {
+		loc += " " + e.Folder
+	}
+	return loc
 }
 
 // fit deja s en exactamente w columnas: trunca con … o rellena con espacios.

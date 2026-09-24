@@ -66,6 +66,28 @@ func TestFit(t *testing.T) {
 	}
 }
 
+func TestLocation(t *testing.T) {
+	mk := func(session string, window int, name, folder string) entries.Entry {
+		return entries.Entry{Folder: folder, Pane: tmux.PaneInfo{Session: session, Window: window, WindowName: name, Command: "claude"}}
+	}
+	cases := []struct {
+		e    entries.Entry
+		want string
+	}{
+		// window con nombre automático y carpeta igual a la sesión: solo el índice
+		{mk("stow_dotfiles", 2, "claude", "stow_dotfiles"), ":2"},
+		{mk("uyquemoderno-web", 1, "claude", "public"), ":1 public"},
+		{mk("elpia", 3, "api", "elpia"), ":3 api"},
+		{mk("elpia", 3, "api", "docs"), ":3 api docs"},
+		{mk("elpia", 1, "", "elpia"), ":1"},
+	}
+	for _, c := range cases {
+		if got := location(c.e); got != c.want {
+			t.Errorf("location(%+v) = %q, want %q", c.e.Pane, got, c.want)
+		}
+	}
+}
+
 func TestBuildRowsRepeatsHeaderWhenNotContiguous(t *testing.T) {
 	mk := func(s string) entries.Entry { return entries.Entry{Pane: tmux.PaneInfo{Session: s}} }
 	got := buildRows([]entries.Entry{mk("a"), mk("a"), mk("b"), mk("a")})

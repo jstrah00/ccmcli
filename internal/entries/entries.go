@@ -13,14 +13,15 @@ import (
 )
 
 type Entry struct {
-	Key    string
-	Pane   tmux.PaneInfo
-	State  state.State
-	Since  time.Time
-	Folder string // basename del cwd
-	Title  string // título de la fila
-	Detail string // último ai-title, para la zona de detalle
-	Num    int    // 1..N según el orden; 0 hasta Arrange
+	Key        string
+	Pane       tmux.PaneInfo
+	State      state.State
+	Since      time.Time
+	Folder     string // basename del cwd
+	Title      string // título de la fila
+	Detail     string // último ai-title, para la zona de detalle
+	Num        int    // 1..N según el orden; 0 hasta Arrange
+	LastPrompt string // último prompt del usuario
 }
 
 type TitleSource func(sessionID, path string) transcript.Titles
@@ -40,7 +41,7 @@ func Collect(panes []tmux.PaneInfo, states map[string]state.Pane, titles TitleSo
 			Folder: filepath.Base(p.Path),
 		}
 		if st, ok := states[p.PaneID]; ok {
-			e.State, e.Since = st.State, st.Since
+			e.State, e.Since, e.LastPrompt = st.State, st.Since, st.LastPrompt
 			if st.Cwd != "" {
 				e.Folder = filepath.Base(st.Cwd)
 			}

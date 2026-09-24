@@ -31,6 +31,7 @@ type Pane struct {
 	TranscriptPath string    `json:"transcript_path"`
 	State          State     `json:"state"`
 	Since          time.Time `json:"since"`
+	LastPrompt     string    `json:"last_prompt,omitempty"`
 }
 
 // Apply devuelve p con el estado st. Since solo se mueve si el estado cambia.

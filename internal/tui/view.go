@@ -63,14 +63,14 @@ func (m Model) View() string {
 	return b.String()
 }
 
-// Fila: marca(2) + número(3) + indicador(1) + 2 + carpeta + 2 + título.
+// Fila: marca(2) + número(3) + indicador(1) + 2 + ubicación + 2 + título.
 func (m Model) renderEntry(e entries.Entry, selected bool) string {
 	mark := "  "
 	if selected {
 		mark = styleTitle.Render("› ")
 	}
 	titleW := m.width - (2 + 3 + 1 + 2 + folderWidth + 2)
-	text := fit(e.Folder, folderWidth) + "  " + fit(e.Title, titleW)
+	text := fit(location(e), folderWidth) + "  " + fit(e.Title, titleW)
 	if selected {
 		text = styleSel.Render(text)
 	}
@@ -88,7 +88,11 @@ func (m Model) detailLine() string {
 	if e == nil {
 		return ""
 	}
-	title := e.Detail
+	// Último prompt; sin él (sesión abierta antes de los hooks), el título.
+	title := e.LastPrompt
+	if title == "" {
+		title = e.Detail
+	}
 	if title == "" {
 		title = e.Title
 	}

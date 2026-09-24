@@ -26,9 +26,12 @@ func titles(sid, path string) transcript.Titles {
 
 func TestCollect(t *testing.T) {
 	states := map[string]state.Pane{
-		"%1": {PaneID: "%1", SessionID: "S1", TranscriptPath: "/t1", Cwd: "/h/proj", State: state.Waiting, Since: t0},
+		"%1": {PaneID: "%1", SessionID: "S1", TranscriptPath: "/t1", Cwd: "/h/proj", State: state.Waiting, Since: t0, LastPrompt: "hacé X"},
 	}
 	es := Collect(panes, states, titles)
+	if es[0].LastPrompt != "hacé X" {
+		t.Fatalf("LastPrompt = %q", es[0].LastPrompt)
+	}
 	if len(es) != 2 {
 		t.Fatalf("esperaba 2 entradas (solo claude), got %d", len(es))
 	}

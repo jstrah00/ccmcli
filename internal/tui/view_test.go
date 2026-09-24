@@ -33,6 +33,16 @@ func TestViewHeadersIndicatorsAndDetail(t *testing.T) {
 	}
 }
 
+func TestViewDetailShowsLastPrompt(t *testing.T) {
+	e := mk("a", 1, "x")
+	e.State, e.Detail, e.LastPrompt = state.Working, "titulo actual", "arreglá el login"
+	_, m := setup(e)
+	v := sized(m, 80, 10).View()
+	if !strings.Contains(v, "arreglá el login · trabajando · hace 3m") || strings.Contains(v, "titulo actual") {
+		t.Fatalf("detalle incorrecto:\n%s", v)
+	}
+}
+
 func TestViewDetailFallsBackToRowTitleAndHidesTimeForUnknown(t *testing.T) {
 	u := mk("a", 1, "x")
 	u.State = state.Unknown
