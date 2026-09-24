@@ -395,5 +395,3 @@ func (m *Model) scroll() {
 		m.offset = 0
 	}
 }
-
-func (m Model) View() string { return "" }
