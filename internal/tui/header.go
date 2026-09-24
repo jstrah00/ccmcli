@@ -27,7 +27,7 @@ func (m *Model) bigHeader() bool { return m.height >= 14 && m.width >= 44 }
 
 func (m *Model) headerLines() int {
 	if m.bigHeader() {
-		return 3 // 2 del logo + 1 en blanco
+		return 4 // 2 del logo + resumen + 1 en blanco
 	}
 	return 1
 }
@@ -35,17 +35,33 @@ func (m *Model) headerLines() int {
 func (m Model) header() []string {
 	if m.bigHeader() {
 		return []string{
-			spread(" "+styleLogo.Render(logo[0]), m.topRight(), m.width),
-			spread(" "+styleLogo.Render(logo[1]), m.summary(), m.width),
+			center(styleLogo.Render(logo[0]), m.width),
+			center(styleLogo.Render(logo[1]), m.width),
+			center(m.status(), m.width),
 			"",
 		}
 	}
 	left := " " + styleTitle.Render("CCM") + styleDim.Render(" cli")
-	right := m.topRight()
+	return []string{spread(left, m.status(), m.width)}
+}
+
+// status: total (o filtro) + contadores por estado, si no se está filtrando.
+func (m Model) status() string {
+	st := m.topRight()
 	if s := m.summary(); s != "" && m.mode != filtering && m.filter == "" {
-		right += styleDim.Render(" · ") + s
+		st += styleDim.Render(" · ") + s
 	}
-	return []string{spread(left, right, m.width)}
+	return st
+}
+
+// center centra s en exactamente width columnas.
+func center(s string, width int) string {
+	w := lipgloss.Width(s)
+	if w >= width {
+		return ansi.Truncate(s, width, "")
+	}
+	left := (width - w) / 2
+	return strings.Repeat(" ", left) + s + strings.Repeat(" ", width-w-left)
 }
 
 // topRight: el filtro si hay uno; si no, el total de sesiones.

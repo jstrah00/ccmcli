@@ -13,13 +13,14 @@ import (
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
-// Paleta tokyonight, la misma del status bar de tmux.
+// Estados: rojo/amarillo/verde semánticos; grises cálidos a juego con la
+// paleta de Claude Code.
 var (
 	colWaiting = lipgloss.NewStyle().Foreground(lipgloss.Color("#f7768e")).Bold(true)
 	colWorking = lipgloss.NewStyle().Foreground(lipgloss.Color("#e0af68"))
 	colDone    = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ece6a")).Bold(true)
-	colIdle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
-	colUnknown = lipgloss.NewStyle().Foreground(lipgloss.Color("#3b4261"))
+	colIdle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#8a8279"))
+	colUnknown = lipgloss.NewStyle().Foreground(lipgloss.Color("#5a544c"))
 )
 
 func indicator(st state.State, frame int) string {

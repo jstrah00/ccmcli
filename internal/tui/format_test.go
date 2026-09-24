@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
 
 	"ccm/internal/entries"
@@ -105,5 +106,15 @@ func TestBuildRowsRepeatsHeaderWhenNotContiguous(t *testing.T) {
 func TestLogoColorIsClaudeOrange(t *testing.T) {
 	if logoColor != "#d97757" {
 		t.Fatalf("logoColor = %q", logoColor)
+	}
+}
+
+// Todo el acento de la UI va en el naranja de Claude, igual que el logo.
+func TestAccentStylesUseClaudeOrange(t *testing.T) {
+	want := lipgloss.Color(logoColor)
+	for name, st := range map[string]lipgloss.Style{"title": styleTitle, "header": styleHeader} {
+		if got := st.GetForeground(); got != want {
+			t.Errorf("%s: foreground = %v, want %v", name, got, want)
+		}
 	}
 }

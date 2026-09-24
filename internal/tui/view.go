@@ -15,11 +15,13 @@ const helpText = "j/k mover · ⏎ ir · / filtrar · dd ocultar · p pegar · U
 
 const folderWidth = 16
 
+// Paleta de Claude Code: acento naranja, crema para lo seleccionado y
+// grises cálidos. Los colores de estado (format.go) quedan semánticos.
 var (
-	styleTitle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7aa2f7"))
-	styleHeader = lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
-	styleDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89"))
-	styleSel    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#c0caf5"))
+	styleTitle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(logoColor))
+	styleHeader = lipgloss.NewStyle().Foreground(lipgloss.Color(logoColor))
+	styleDim    = lipgloss.NewStyle().Foreground(lipgloss.Color("#8a8279"))
+	styleSel    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f4f3ee"))
 	styleErr    = lipgloss.NewStyle().Foreground(lipgloss.Color("#f7768e"))
 )
 

@@ -133,25 +133,30 @@ func states4() (*harness, Model) {
 	return setup(w, d1, d2, k, mk("a", 5, "i"))
 }
 
-func TestHeaderBigShowsLogoAndSummary(t *testing.T) {
+func TestHeaderBigShowsCenteredLogoAndSummaryBelow(t *testing.T) {
 	_, m := states4()
 	l := lines(sized(m, 80, 20).View())
-	if !strings.Contains(l[0], "▄▀▀ ▄▀▀ █▄ ▄█") || !strings.Contains(l[1], "▀▄▄ ▀▄▄ █ ▀ █") {
-		t.Fatalf("falta el logo:\n%s\n%s", l[0], l[1])
+	pad := strings.Repeat(" ", (80-24)/2)
+	if !strings.HasPrefix(l[0], pad+"▄▀▀ ▄▀▀ █▄ ▄█") || !strings.HasPrefix(l[1], pad+"▀▄▄ ▀▄▄ █ ▀ █") {
+		t.Fatalf("logo no centrado:\n%q\n%q", l[0], l[1])
 	}
-	if !strings.Contains(l[0], "5 sesiones") {
-		t.Fatalf("falta el total: %q", l[0])
-	}
-	for _, s := range []string{"1 ●", "2 ✓", "1 " + spinnerFrames[0]} {
-		if !strings.Contains(l[1], s) {
-			t.Fatalf("falta %q en el resumen: %q", s, l[1])
+	sum := l[2]
+	for _, s := range []string{"5 sesiones", "1 ●", "2 ✓", "1 " + spinnerFrames[0]} {
+		if !strings.Contains(sum, s) {
+			t.Fatalf("falta %q en el resumen: %q", s, sum)
 		}
 	}
-	if strings.Contains(l[1], "○") {
-		t.Fatalf("idle no va en el resumen: %q", l[1])
+	if strings.Contains(sum, "○") {
+		t.Fatalf("idle no va en el resumen: %q", sum)
 	}
-	if strings.TrimSpace(l[2]) != "" || strings.TrimSpace(l[3]) != "a" {
-		t.Fatalf("esperaba línea en blanco y encabezado:\n%q\n%q", l[2], l[3])
+	// centrado: el margen izquierdo y el derecho difieren a lo sumo en 1
+	left := len(sum) - len(strings.TrimLeft(sum, " "))
+	right := len(sum) - len(strings.TrimRight(sum, " "))
+	if d := left - right; d < -1 || d > 1 {
+		t.Fatalf("resumen no centrado (izq %d, der %d): %q", left, right, sum)
+	}
+	if strings.TrimSpace(l[3]) != "" || strings.TrimSpace(l[4]) != "a" {
+		t.Fatalf("esperaba línea en blanco y encabezado:\n%q\n%q", l[3], l[4])
 	}
 }
 
@@ -166,8 +171,8 @@ func TestHeaderFilterReplacesTotal(t *testing.T) {
 	_, m := states4()
 	m = press(sized(m, 80, 20), "/", "d")
 	l := lines(m.View())
-	if !strings.Contains(l[0], "/d") || strings.Contains(l[0], "sesiones") {
-		t.Fatalf("filtro en el header: %q", l[0])
+	if !strings.Contains(l[2], "/d") || strings.Contains(l[2], "sesiones") {
+		t.Fatalf("filtro en el header: %q", l[2])
 	}
 }
 
