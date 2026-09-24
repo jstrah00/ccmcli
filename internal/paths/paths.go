@@ -14,8 +14,10 @@ func base(env, fallback string) string {
 	return filepath.Join(home, fallback)
 }
 
-func CacheDir() string  { return filepath.Join(base("XDG_CACHE_HOME", ".cache"), "ccm") }
-func StateDir() string  { return filepath.Join(base("XDG_STATE_HOME", filepath.Join(".local", "state")), "ccm") }
+func CacheDir() string { return filepath.Join(base("XDG_CACHE_HOME", ".cache"), "ccm") }
+func StateDir() string {
+	return filepath.Join(base("XDG_STATE_HOME", filepath.Join(".local", "state")), "ccm")
+}
 func PanesDir() string  { return filepath.Join(CacheDir(), "panes") }
 func TitlesDir() string { return filepath.Join(CacheDir(), "titles") }
 func LogPath() string   { return filepath.Join(CacheDir(), "log") }
