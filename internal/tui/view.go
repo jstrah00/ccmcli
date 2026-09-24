@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 
 	"ccm/internal/entries"
 	"ccm/internal/state"
@@ -73,7 +74,10 @@ func (m Model) renderEntry(e entries.Entry, selected bool) string {
 	if selected {
 		text = styleSel.Render(text)
 	}
-	return mark + fmt.Sprintf("%2d ", e.Num) + indicator(e.State, m.frame) + "  " + text
+	line := mark + fmt.Sprintf("%2d ", e.Num) + indicator(e.State, m.frame) + "  " + text
+	// El prefijo es de ancho fijo: en un popup angosto (o con números de 3
+	// dígitos) se pasaría del ancho y la terminal partiría la línea.
+	return ansi.Truncate(line, m.width, "")
 }
 
 func (m Model) detailLine() string {

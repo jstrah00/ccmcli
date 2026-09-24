@@ -48,10 +48,25 @@ func TestViewLinesNeverExceedWidth(t *testing.T) {
 	e.Title = strings.Repeat("título largo 日本語 ", 20)
 	e.Detail = e.Title
 	_, m := setup(e)
-	m = sized(m, 40, 10)
+	for _, width := range []int{12, 20, 25, 40} {
+		v := sized(m, width, 10).View()
+		for _, line := range strings.Split(v, "\n") {
+			if w := lipgloss.Width(line); w > width {
+				t.Fatalf("ancho %d: línea de %d columnas: %q", width, w, line)
+			}
+		}
+	}
+}
+
+func TestViewThreeDigitNumberFitsWidth(t *testing.T) {
+	e := mk("a", 1, "x")
+	e.Num = 100
+	_, m := setup(e)
+	m = sized(m, 60, 10)
+	m.list[0].Num, m.shown[0].Num = 100, 100
 	for _, line := range strings.Split(m.View(), "\n") {
-		if w := lipgloss.Width(line); w > 40 {
-			t.Fatalf("línea de ancho %d > 40: %q", w, line)
+		if w := lipgloss.Width(line); w > 60 {
+			t.Fatalf("línea de %d columnas: %q", w, line)
 		}
 	}
 }

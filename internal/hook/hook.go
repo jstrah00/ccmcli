@@ -55,10 +55,15 @@ func Run(event string, stdin io.Reader, d Deps) error {
 	case "tool-done":
 		target = state.Working
 	case "stop":
-		target = state.Done
-		if active, err := d.PaneActive(d.PaneID); err == nil && active {
-			target = state.Idle // terminó mientras lo mirabas
+		target = finished(d)
+	case "idle":
+		// idle_prompt: CC espera un prompt nuevo. Stop no dispara si
+		// interrumpiste con Esc, así que esto destraba working/waiting.
+		p, err := d.Store.Load(d.PaneID)
+		if err != nil || (p.State != state.Working && p.State != state.Waiting) {
+			return nil
 		}
+		target = finished(d)
 	default:
 		return fmt.Errorf("%w: %q", ErrUnknownEvent, event)
 	}
@@ -77,6 +82,14 @@ func Run(event string, stdin io.Reader, d Deps) error {
 		p.TranscriptPath = in.TranscriptPath
 	}
 	return d.Store.Save(state.Apply(p, target, d.Now()))
+}
+
+// finished: done, o idle si terminó mientras lo mirabas.
+func finished(d Deps) state.State {
+	if active, err := d.PaneActive(d.PaneID); err == nil && active {
+		return state.Idle
+	}
+	return state.Done
 }
 
 // UserPromptSubmit también dispara cuando el harness inyecta un aviso como si

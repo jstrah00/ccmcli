@@ -130,6 +130,48 @@ func TestRunKeepsFieldsWhenInputEmpty(t *testing.T) {
 	}
 }
 
+// idle_prompt: CC quedó esperando un prompt nuevo. Corrige estados que
+// quedaron pegados porque Stop no dispara al interrumpir con Esc.
+func TestRunIdlePromptUnsticksState(t *testing.T) {
+	cases := []struct {
+		from   state.State
+		active bool
+		want   state.State
+	}{
+		{state.Working, false, state.Done},
+		{state.Waiting, false, state.Done},
+		{state.Working, true, state.Idle},
+		{state.Done, false, state.Done},
+		{state.Idle, false, state.Idle},
+	}
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("%s/active=%v", c.from, c.active), func(t *testing.T) {
+			d := deps(t, c.active)
+			_ = d.Store.Save(state.Pane{PaneID: "%5", SessionID: "s1", State: c.from, Since: t0.Add(-time.Hour)})
+			if err := Run("idle", strings.NewReader(input), d); err != nil {
+				t.Fatal(err)
+			}
+			p := load(t, d)
+			if p.State != c.want {
+				t.Fatalf("state = %q, want %q", p.State, c.want)
+			}
+			if c.from == c.want && !p.Since.Equal(t0.Add(-time.Hour)) {
+				t.Fatalf("since cambió sin cambiar el estado")
+			}
+		})
+	}
+}
+
+func TestRunIdlePromptWithoutStateIsNoop(t *testing.T) {
+	d := deps(t, false)
+	if err := Run("idle", strings.NewReader(input), d); err != nil {
+		t.Fatal(err)
+	}
+	if all, _ := d.Store.All(); len(all) != 0 {
+		t.Fatalf("creó estado: %+v", all)
+	}
+}
+
 func TestSeenMarksDoneInActiveAttachedWindows(t *testing.T) {
 	st := state.Store{Dir: t.TempDir()}
 	_ = st.Save(state.Pane{PaneID: "%1", State: state.Done, Since: t0})

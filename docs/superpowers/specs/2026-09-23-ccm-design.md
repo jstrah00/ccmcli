@@ -27,7 +27,7 @@ Tres piezas:
 3. **tmux.conf** (dotfiles, ambas branches):
    ```
    bind-key -n C-g display-popup -E -h "60%" -w "80%" "$HOME/go/bin/ccm"
-   set-hook -g after-select-window    'run-shell -b "$HOME/go/bin/ccm seen"'
+   set-hook -g session-window-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
    set-hook -g client-session-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
    ```
 
@@ -74,6 +74,7 @@ del pane id se reemplaza por nada: `%41` → `41.json`):
 | `PreToolUse` con matcher `AskUserQuestion`        | `ask`          | `waiting`    |
 | `Notification` con matcher `permission_prompt`    | `permission`   | `waiting`    |
 | `PostToolUse` (cualquier tool)                    | `tool-done`    | `working`    |
+| `Notification` con matcher `idle_prompt`          | `idle`         | si estaba `working`/`waiting`: igual que `stop` (destraba interrupciones con Esc, que no disparan `Stop`) |
 | `Stop`                                            | `stop`         | `done`, o `idle` si la window del pane está activa en una sesión attached |
 | `SessionEnd`                                      | `end`          | borra el archivo |
 
