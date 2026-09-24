@@ -16,8 +16,9 @@ var logo = [2]string{
 	"▀▄▄ ▀▄▄ █ ▀ █  ▀▄▄ █▄▄ █",
 }
 
-// Degradé del logo: azul → violeta de tokyonight.
-var gradFrom, gradTo = [3]float64{0x7a, 0xa2, 0xf7}, [3]float64{0xbb, 0x9a, 0xf7}
+// Degradé del logo en la paleta de Claude Code: durazno → naranja Claude
+// (#d97757, cerca del medio) → terracota.
+var gradFrom, gradTo = [3]float64{0xf0, 0xa8, 0x82}, [3]float64{0xc1, 0x5f, 0x3c}
 
 // bigHeader: el logo solo va si sobra lugar; si no, una línea compacta
 // para no comerle filas a la lista.
@@ -97,12 +98,17 @@ func gradient(s string) string {
 		if len(r) > 1 {
 			t = float64(i) / float64(len(r)-1)
 		}
-		var rgb [3]int
-		for k := range rgb {
-			rgb[k] = int(gradFrom[k] + (gradTo[k]-gradFrom[k])*t)
-		}
-		col := lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", rgb[0], rgb[1], rgb[2]))
+		col := lipgloss.Color(gradColor(t))
 		b.WriteString(lipgloss.NewStyle().Foreground(col).Bold(true).Render(string(c)))
 	}
 	return b.String()
+}
+
+// gradColor interpola el degradé en t ∈ [0,1] y devuelve el color en hex.
+func gradColor(t float64) string {
+	var rgb [3]int
+	for k := range rgb {
+		rgb[k] = int(gradFrom[k] + (gradTo[k]-gradFrom[k])*t + 0.5)
+	}
+	return fmt.Sprintf("#%02x%02x%02x", rgb[0], rgb[1], rgb[2])
 }
