@@ -226,3 +226,13 @@ func TestViewAliasReplacesLocationAndRenameInput(t *testing.T) {
 		t.Fatalf("falta el input de renombre:\n%s", v)
 	}
 }
+
+func TestViewLongAliasWidensLocation(t *testing.T) {
+	e := mk("a", 1, "x")
+	h, m := setup(e)
+	h.ord.SetAlias(e.Key, "un nombre bastante largo")
+	v := sized(send(m, tickMsg{}), 80, 10).View()
+	if !strings.Contains(v, "un nombre bastante largo  t-x") {
+		t.Fatalf("alias truncado:\n%s", v)
+	}
+}

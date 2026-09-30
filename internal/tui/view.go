@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/mattn/go-runewidth"
 
 	"ccm/internal/entries"
 	"ccm/internal/state"
@@ -16,7 +17,17 @@ const (
 	renameHelp = "⏎ guardar · esc cancelar · vacío borra el nombre"
 )
 
-const folderWidth = 16
+const minLocWidth = 16
+
+// locWidth: la columna de ubicación crece hasta la más larga (p. ej. un alias),
+// sin pasar de la mitad del ancho para que el título siga viéndose.
+func (m Model) locWidth() int {
+	w := minLocWidth
+	for _, e := range m.shown {
+		w = max(w, runewidth.StringWidth(location(e)))
+	}
+	return max(minLocWidth, min(w, m.width/2))
+}
 
 // Paleta de Claude Code: acento naranja, crema para lo seleccionado y
 // grises cálidos. Los colores de estado (format.go) quedan semánticos.
@@ -45,13 +56,14 @@ func (m Model) View() string {
 
 	rows := buildRows(m.shown)
 	h := m.listHeight()
+	locW := m.locWidth()
 	n := 0
 	for i := m.offset; i < len(rows) && n < h; i++ {
 		r := rows[i]
 		if r.entry < 0 {
 			b.WriteString(styleHeader.Render(fit(" "+r.header, m.width)) + "\n")
 		} else {
-			b.WriteString(m.renderEntry(m.shown[r.entry], r.entry == m.cursor) + "\n")
+			b.WriteString(m.renderEntry(m.shown[r.entry], r.entry == m.cursor, locW) + "\n")
 		}
 		n++
 	}
@@ -69,13 +81,13 @@ func (m Model) View() string {
 }
 
 // Fila: marca(2) + número(3) + indicador(1) + 2 + ubicación + 2 + título.
-func (m Model) renderEntry(e entries.Entry, selected bool) string {
+func (m Model) renderEntry(e entries.Entry, selected bool, locW int) string {
 	mark := "  "
 	if selected {
 		mark = styleTitle.Render("› ")
 	}
-	titleW := m.width - (2 + 3 + 1 + 2 + folderWidth + 2)
-	text := fit(location(e), folderWidth) + "  " + fit(e.Title, titleW)
+	titleW := m.width - (2 + 3 + 1 + 2 + locW + 2)
+	text := fit(location(e), locW) + "  " + fit(e.Title, titleW)
 	if selected {
 		text = styleSel.Render(text)
 	}
