@@ -69,10 +69,13 @@ func humanSince(d time.Duration) string {
 	}
 }
 
-// location dice dónde está la entrada dentro de su sesión: el índice de la
+// location dice (salvo que tenga alias) dónde está la entrada dentro de su sesión: el índice de la
 // window, su nombre si se lo pusiste (no el automático, que es el comando) y
 // la carpeta si no es la misma que el encabezado de sesión.
 func location(e entries.Entry) string {
+	if e.Alias != "" {
+		return e.Alias
+	}
 	loc := fmt.Sprintf(":%d", e.Pane.Window)
 	if n := e.Pane.WindowName; n != "" && n != e.Pane.Command {
 		loc += " " + n

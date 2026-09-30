@@ -81,6 +81,7 @@ func TestLocation(t *testing.T) {
 		{mk("elpia", 3, "api", "elpia"), ":3 api"},
 		{mk("elpia", 3, "api", "docs"), ":3 api docs"},
 		{mk("elpia", 1, "", "elpia"), ":1"},
+		{func() entries.Entry { e := mk("elpia", 3, "api", "docs"); e.Alias = "mi nombre"; return e }(), "mi nombre"},
 	}
 	for _, c := range cases {
 		if got := location(c.e); got != c.want {

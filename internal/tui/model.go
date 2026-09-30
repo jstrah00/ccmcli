@@ -27,6 +27,7 @@ type mode int
 const (
 	normal mode = iota
 	filtering
+	renaming
 )
 
 const (
@@ -50,6 +51,7 @@ type Model struct {
 	cursor   int             // índice en shown
 	mode     mode
 	filter   string
+	input    string // nombre en edición
 	pending  string // "d" o "g" esperando la segunda tecla
 	digit    string // primer dígito esperando el segundo
 	seq      int    // invalida timeouts viejos
@@ -110,8 +112,11 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 			return m.jump(d)
 		}
 	case tea.KeyMsg:
-		if m.mode == filtering {
+		switch m.mode {
+		case filtering:
 			return m.filterKey(msg)
+		case renaming:
+			return m.renameKey(msg)
 		}
 		return m.normalKey(msg)
 	}
@@ -166,6 +171,11 @@ func (m Model) normalKey(k tea.KeyMsg) (Model, tea.Cmd) {
 		m.restoreAll()
 	case "/":
 		m.mode = filtering
+	case "r":
+		if e := m.selected(); e != nil {
+			m.mode = renaming
+			m.input = e.Alias
+		}
 	case "enter":
 		return m.open(m.selected())
 	default:
@@ -202,6 +212,31 @@ func (m Model) filterKey(k tea.KeyMsg) (Model, tea.Cmd) {
 		m.setFilter(m.filter + " ")
 	case tea.KeyRunes:
 		m.setFilter(m.filter + string(k.Runes))
+	}
+	return m, nil
+}
+
+func (m Model) renameKey(k tea.KeyMsg) (Model, tea.Cmd) {
+	switch k.Type {
+	case tea.KeyCtrlC:
+		return m.quit()
+	case tea.KeyEsc:
+		m.mode = normal
+	case tea.KeyEnter:
+		m.mode = normal
+		if key := m.currentKey(); key != "" {
+			m.d.Order.SetAlias(key, m.input)
+			m.save()
+			m.relist()
+		}
+	case tea.KeyBackspace:
+		if r := []rune(m.input); len(r) > 0 {
+			m.input = string(r[:len(r)-1])
+		}
+	case tea.KeySpace:
+		m.input += " "
+	case tea.KeyRunes:
+		m.input += string(k.Runes)
 	}
 	return m, nil
 }
@@ -252,6 +287,9 @@ func (m *Model) reload() {
 func (m *Model) relist() {
 	key := m.currentKey()
 	m.list = entries.Arrange(m.live, m.d.Order.Visible(entries.Keys(m.live)))
+	for i := range m.list {
+		m.list[i].Alias = m.d.Order.Alias(m.list[i].Key)
+	}
 	m.applyFilter()
 	m.placeCursor(key)
 }
@@ -265,7 +303,7 @@ func (m *Model) applyFilter() {
 	}
 	src := make([]string, len(m.list))
 	for i, e := range m.list {
-		src[i] = e.Pane.Session + " " + e.Folder + " " + e.Title
+		src[i] = e.Pane.Session + " " + e.Alias + " " + e.Folder + " " + e.Title
 	}
 	matches := fuzzy.Find(m.filter, src)
 	sort.Slice(matches, func(i, j int) bool { return matches[i].Index < matches[j].Index })

@@ -342,3 +342,49 @@ func TestScrollKeepsCursorVisible(t *testing.T) {
 		t.Fatalf("offset tras gg = %d", m.offset)
 	}
 }
+
+func TestRenameSavesAlias(t *testing.T) {
+	a := mk("s", 1, "a")
+	h, m := setup(a, mk("s", 2, "b"))
+	m = press(m, "r", "mi", " ", "api", "backspace", "enter")
+	if got := h.ord.Alias(a.Key); got != "mi ap" {
+		t.Fatalf("alias = %q", got)
+	}
+	if h.saves != 1 || m.mode != normal || m.list[0].Alias != "mi ap" {
+		t.Fatalf("saves=%d mode=%v alias=%q", h.saves, m.mode, m.list[0].Alias)
+	}
+}
+
+func TestRenameEscDoesNotSave(t *testing.T) {
+	h, m := setup(mk("s", 1, "a"))
+	m = press(m, "r", "x", "esc")
+	if h.saves != 0 || len(h.ord.Aliases) != 0 || m.mode != normal {
+		t.Fatalf("saves=%d aliases=%v", h.saves, h.ord.Aliases)
+	}
+}
+
+func TestRenamePrefillsAndEmptyClears(t *testing.T) {
+	a := mk("s", 1, "a")
+	h, m := setup(a)
+	h.ord.SetAlias(a.Key, "ab")
+	m = send(m, tickMsg{})
+	m = press(m, "r")
+	if m.input != "ab" {
+		t.Fatalf("input = %q", m.input)
+	}
+	m = press(m, "backspace", "backspace", "enter")
+	if h.ord.Alias(a.Key) != "" || m.list[0].Alias != "" {
+		t.Fatal("el alias no se borró")
+	}
+}
+
+func TestFilterMatchesAlias(t *testing.T) {
+	a, b := mk("s", 1, "a"), mk("s", 2, "b")
+	h, m := setup(a, b)
+	h.ord.SetAlias(b.Key, "zorro")
+	m = send(m, tickMsg{})
+	m = press(m, "/", "zorro", "enter")
+	if got := folders(m.shown); !reflect.DeepEqual(got, []string{"b"}) {
+		t.Fatalf("shown = %v", got)
+	}
+}

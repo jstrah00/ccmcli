@@ -11,7 +11,10 @@ import (
 	"ccm/internal/state"
 )
 
-const helpText = "j/k mover · ⏎ ir · / filtrar · dd ocultar · p pegar · U restaurar · q salir"
+const (
+	helpText   = "j/k mover · ⏎ ir · / filtrar · r renombrar · dd ocultar · p pegar · U restaurar · q salir"
+	renameHelp = "⏎ guardar · esc cancelar · vacío borra el nombre"
+)
 
 const folderWidth = 16
 
@@ -57,7 +60,11 @@ func (m Model) View() string {
 	}
 	b.WriteString(styleDim.Render(strings.Repeat("─", max(m.width, 1))) + "\n")
 	b.WriteString(m.detailLine() + "\n")
-	b.WriteString(styleDim.Render(fit(" "+helpText, m.width)))
+	help := helpText
+	if m.mode == renaming {
+		help = renameHelp
+	}
+	b.WriteString(styleDim.Render(fit(" "+help, m.width)))
 	return b.String()
 }
 
@@ -81,6 +88,9 @@ func (m Model) renderEntry(e entries.Entry, selected bool) string {
 func (m Model) detailLine() string {
 	if m.err != nil {
 		return styleErr.Render(fit(" error: "+m.err.Error(), m.width))
+	}
+	if m.mode == renaming {
+		return styleSel.Render(fit(" nombre: "+m.input+"▏", m.width))
 	}
 	e := m.selected()
 	if e == nil {

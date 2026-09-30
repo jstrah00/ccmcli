@@ -211,3 +211,18 @@ func TestHeaderShownWhenEmpty(t *testing.T) {
 		t.Fatalf("vacío sin header:\n%s", v)
 	}
 }
+
+func TestViewAliasReplacesLocationAndRenameInput(t *testing.T) {
+	e := mk("a", 1, "x")
+	h, m := setup(e)
+	h.ord.SetAlias(e.Key, "backend")
+	m = sized(send(m, tickMsg{}), 80, 10)
+	v := m.View()
+	if !strings.Contains(v, "backend") || strings.Contains(v, ":1") {
+		t.Fatalf("alias no reemplaza la ubicación:\n%s", v)
+	}
+	v = press(m, "r", "z").View()
+	if !strings.Contains(v, "nombre: backendz▏") || !strings.Contains(v, renameHelp) {
+		t.Fatalf("falta el input de renombre:\n%s", v)
+	}
+}

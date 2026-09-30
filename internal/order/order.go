@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"slices"
+	"strings"
 
 	"ccm/internal/fsutil"
 )
@@ -19,8 +20,9 @@ func Key(session string, window, pane int, cwd string) string {
 }
 
 type Store struct {
-	Order  []string `json:"order"`
-	Hidden []string `json:"hidden"`
+	Order   []string          `json:"order"`
+	Hidden  []string          `json:"hidden"`
+	Aliases map[string]string `json:"aliases,omitempty"`
 }
 
 func Load(path string) (*Store, error) {
@@ -128,4 +130,19 @@ func (s *Store) RestoreAll(live []string) {
 		}
 	}
 	s.Hidden = nil
+}
+
+func (s *Store) Alias(key string) string { return s.Aliases[key] }
+
+// SetAlias con nombre vacío borra el alias.
+func (s *Store) SetAlias(key, name string) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		delete(s.Aliases, key)
+		return
+	}
+	if s.Aliases == nil {
+		s.Aliases = map[string]string{}
+	}
+	s.Aliases[key] = name
 }

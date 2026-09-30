@@ -19,10 +19,10 @@ Con varias sesiones de Claude Code en paralelo, repartidas en sesiones y windows
    3 ⠼  :1 ccmcli         Rediseñar el header
  ────────────────────────────────────────────
  arreglá el login · terminó · hace 12m
- j/k mover · ⏎ ir · / filtrar · dd ocultar · p pegar · U restaurar · q salir
+ j/k mover · ⏎ ir · / filtrar · r renombrar · dd ocultar · p pegar · U restaurar · q salir
 ```
 
-Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más la carpeta si difiere de la sesión) y título. Abajo va el último prompt de la sesión seleccionada.
+Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más la carpeta si difiere de la sesión, o el nombre que le pongas con `r`) y título. Abajo va el último prompt de la sesión seleccionada.
 
 ## Estados
 
@@ -42,12 +42,13 @@ Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más 
 | `Enter` | ir a esa sesión, window y pane |
 | `1`–`9` (y `10`+) | ir directo a esa entrada |
 | `/` | filtrar (fuzzy); `Enter` lo fija, `Esc` lo limpia |
+| `r` | renombrar la entrada (reemplaza `:2 …`); vacío vuelve al original |
 | `dd` | ocultar la entrada (queda en el registro) |
 | `p` / `P` | pegarla debajo / arriba: así reordenás |
 | `U` | volver a mostrar todas las ocultas |
 | `q` / `Esc` | cerrar |
 
-El orden y las ocultas se guardan entre aperturas.
+El orden, las ocultas y los nombres se guardan entre aperturas.
 
 ## Cómo funciona
 
@@ -55,7 +56,7 @@ El orden y las ocultas se guardan entre aperturas.
 - **Visto:** hooks de tmux llaman a `ccm seen` al cambiar de window o sesión, y lo que estás mirando pasa de `✓` a `○`.
 - **Lista:** `tmux list-panes` filtrado por los panes que corren `claude`, cruzado con esos JSON.
 - **Títulos:** del transcript de cada sesión, con lectura incremental.
-- **Orden:** `~/.local/state/ccm/order.json`. Respeta `XDG_CACHE_HOME` y `XDG_STATE_HOME`.
+- **Orden y nombres:** `~/.local/state/ccm/order.json`. Respeta `XDG_CACHE_HOME` y `XDG_STATE_HOME`.
 
 ## Instalación
 

@@ -112,3 +112,34 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	eq(t, got.Order, s.Order)
 	eq(t, got.Hidden, s.Hidden)
 }
+
+func TestSetAlias(t *testing.T) {
+	s := &Store{}
+	s.SetAlias("a", "  backend ")
+	if got := s.Alias("a"); got != "backend" {
+		t.Fatalf("Alias = %q", got)
+	}
+	s.SetAlias("a", "  ")
+	if _, ok := s.Aliases["a"]; ok {
+		t.Fatal("el alias vacío no se borró")
+	}
+}
+
+func TestAliasesRoundTripAndOldFile(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "order.json")
+	if err := os.WriteFile(p, []byte(`{"order":["a"],"hidden":[]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Load(p)
+	if err != nil || s.Alias("a") != "" {
+		t.Fatalf("Load viejo: %v %v", s, err)
+	}
+	s.SetAlias("a", "api")
+	if err := s.Save(p); err != nil {
+		t.Fatal(err)
+	}
+	s2, err := Load(p)
+	if err != nil || s2.Alias("a") != "api" {
+		t.Fatalf("round trip: %v %v", s2, err)
+	}
+}

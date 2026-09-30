@@ -23,6 +23,7 @@ type Entry struct {
 	Detail     string // último ai-title, para la zona de detalle
 	Num        int    // 1..N según el orden; 0 hasta Arrange
 	LastPrompt string // último prompt del usuario
+	Alias      string // nombre puesto desde la TUI; reemplaza la ubicación
 }
 
 type TitleSource func(sessionID, path string) transcript.Titles
