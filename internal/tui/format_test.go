@@ -32,7 +32,7 @@ func TestHumanSince(t *testing.T) {
 func TestIndicatorPerState(t *testing.T) {
 	cases := map[state.State]string{
 		state.Waiting: "●",
-		state.Done:    "✓",
+		state.Done:    "✔",
 		state.Idle:    "○",
 		state.Unknown: "?",
 	}
@@ -92,11 +92,11 @@ func TestLocation(t *testing.T) {
 
 func TestBuildRowsRepeatsHeaderWhenNotContiguous(t *testing.T) {
 	mk := func(s string) entries.Entry { return entries.Entry{Pane: tmux.PaneInfo{Session: s}} }
-	got := buildRows([]entries.Entry{mk("a"), mk("a"), mk("b"), mk("a")})
+	got := buildRows([]entries.Entry{mk("a"), mk("a"), mk("b"), mk("a")}, false)
 	want := []row{
-		{header: "a", entry: -1}, {entry: 0}, {entry: 1},
-		{header: "b", entry: -1}, {entry: 2},
-		{header: "a", entry: -1}, {entry: 3},
+		{header: "a", count: 2, entry: rowHeader}, {entry: 0}, {entry: 1},
+		{entry: rowSpacer}, {header: "b", count: 1, entry: rowHeader}, {entry: 2},
+		{entry: rowSpacer}, {header: "a", count: 1, entry: rowHeader}, {entry: 3},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v", got)

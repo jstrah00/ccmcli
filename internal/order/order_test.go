@@ -143,3 +143,23 @@ func TestAliasesRoundTripAndOldFile(t *testing.T) {
 		t.Fatalf("round trip: %v %v", s2, err)
 	}
 }
+
+func TestSetStatusAndRoundTrip(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "order.json")
+	s := &Store{}
+	s.SetStatus("a", " en review ")
+	if got := s.Status("a"); got != "en review" {
+		t.Fatalf("Status = %q", got)
+	}
+	if err := s.Save(p); err != nil {
+		t.Fatal(err)
+	}
+	s2, err := Load(p)
+	if err != nil || s2.Status("a") != "en review" {
+		t.Fatalf("round trip: %v %v", s2, err)
+	}
+	s2.SetStatus("a", "")
+	if _, ok := s2.Statuses["a"]; ok {
+		t.Fatal("el status vacío no se borró")
+	}
+}

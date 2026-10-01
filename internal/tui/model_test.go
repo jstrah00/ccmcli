@@ -331,10 +331,10 @@ func TestLoadErrorKeepsList(t *testing.T) {
 
 func TestScrollKeepsCursorVisible(t *testing.T) {
 	_, m := twelve()
-	m = send(m, tea.WindowSizeMsg{Width: 80, Height: 8}) // 4 filas de lista
+	m = send(m, tea.WindowSizeMsg{Width: 80, Height: 8}) // 3 filas de lista
 	m = press(m, "G")
-	// filas: [header, f01..f12] -> cursor en fila 12; offset = 12-4+1 = 9
-	if m.offset != 9 {
+	// filas: [header, f01..f12] -> cursor en fila 12; offset = 12-3+1 = 10
+	if m.offset != 10 {
 		t.Fatalf("offset = %d", m.offset)
 	}
 	m = press(m, "g", "g")
@@ -386,5 +386,51 @@ func TestFilterMatchesAlias(t *testing.T) {
 	m = press(m, "/", "zorro", "enter")
 	if got := folders(m.shown); !reflect.DeepEqual(got, []string{"b"}) {
 		t.Fatalf("shown = %v", got)
+	}
+}
+
+func TestStatusSetEditAndClear(t *testing.T) {
+	a := mk("s", 1, "a")
+	h, m := setup(a, mk("s", 2, "b"))
+	m = press(m, "s", "en", " ", "review", "enter")
+	if h.ord.Status(a.Key) != "en review" || m.list[0].Status != "en review" || h.saves != 1 || m.mode != normal {
+		t.Fatalf("status=%q saves=%d mode=%v", h.ord.Status(a.Key), h.saves, m.mode)
+	}
+	m = press(m, "s")
+	if m.input != "en review" || m.mode != editingStatus {
+		t.Fatalf("input = %q", m.input)
+	}
+	m = press(m, "x", "esc")
+	if h.ord.Status(a.Key) != "en review" || h.saves != 1 {
+		t.Fatal("esc guardó")
+	}
+	m = press(m, "s")
+	for range "en review" {
+		m = press(m, "backspace")
+	}
+	m = press(m, "enter")
+	if h.ord.Status(a.Key) != "" || m.list[0].Status != "" || h.ord.Alias(a.Key) != "" {
+		t.Fatal("el status no se borró")
+	}
+}
+
+func TestFilterMatchesStatus(t *testing.T) {
+	a, b := mk("s", 1, "a"), mk("s", 2, "b")
+	h, m := setup(a, b)
+	h.ord.SetStatus(b.Key, "bloqueado")
+	m = send(m, tickMsg{})
+	m = press(m, "/", "bloqueado", "enter")
+	if got := folders(m.shown); !reflect.DeepEqual(got, []string{"b"}) {
+		t.Fatalf("shown = %v", got)
+	}
+}
+
+func TestDSClearsStatus(t *testing.T) {
+	a := mk("s", 1, "a")
+	h, m := setup(a)
+	h.ord.SetStatus(a.Key, "en review")
+	m = press(send(m, tickMsg{}), "d", "s")
+	if h.ord.Status(a.Key) != "" || m.list[0].Status != "" || m.mode != normal || h.saves != 1 || len(m.list) != 1 {
+		t.Fatalf("status=%q mode=%v saves=%d", h.ord.Status(a.Key), m.mode, h.saves)
 	}
 }

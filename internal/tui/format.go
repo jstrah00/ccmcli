@@ -19,22 +19,27 @@ var (
 	colWaiting = lipgloss.NewStyle().Foreground(lipgloss.Color("#f7768e")).Bold(true)
 	colWorking = lipgloss.NewStyle().Foreground(lipgloss.Color("#e0af68"))
 	colDone    = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ece6a")).Bold(true)
-	colIdle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#8a8279"))
-	colUnknown = lipgloss.NewStyle().Foreground(lipgloss.Color("#5a544c"))
+	colIdle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#a8a095"))
+	colUnknown = lipgloss.NewStyle().Foreground(lipgloss.Color("#7a7268"))
 )
 
 func indicator(st state.State, frame int) string {
+	style, glyph := indicatorParts(st, frame)
+	return style.Render(glyph)
+}
+
+func indicatorParts(st state.State, frame int) (lipgloss.Style, string) {
 	switch st {
 	case state.Waiting:
-		return colWaiting.Render("●")
+		return colWaiting, "●"
 	case state.Working:
-		return colWorking.Render(spinnerFrames[frame%len(spinnerFrames)])
+		return colWorking, spinnerFrames[frame%len(spinnerFrames)]
 	case state.Done:
-		return colDone.Render("✓")
+		return colDone, "✔"
 	case state.Idle:
-		return colIdle.Render("○")
+		return colIdle, "○"
 	default:
-		return colUnknown.Render("?")
+		return colUnknown, "?"
 	}
 }
 

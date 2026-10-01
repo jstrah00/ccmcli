@@ -28,12 +28,13 @@ const (
 	normal mode = iota
 	filtering
 	renaming
+	editingStatus
 )
 
 const (
 	refreshEvery = time.Second
 	spinEvery    = 100 * time.Millisecond
-	seqTimeout   = time.Second            // dd, gg
+	seqTimeout   = time.Second            // dd, ds, gg
 	digitTimeout = 300 * time.Millisecond // segundo dígito
 )
 
@@ -51,7 +52,7 @@ type Model struct {
 	cursor   int             // índice en shown
 	mode     mode
 	filter   string
-	input    string // nombre en edición
+	input    string // nombre o status en edición
 	pending  string // "d" o "g" esperando la segunda tecla
 	digit    string // primer dígito esperando el segundo
 	seq      int    // invalida timeouts viejos
@@ -115,8 +116,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		switch m.mode {
 		case filtering:
 			return m.filterKey(msg)
-		case renaming:
-			return m.renameKey(msg)
+		case renaming, editingStatus:
+			return m.editKey(msg)
 		}
 		return m.normalKey(msg)
 	}
@@ -140,6 +141,13 @@ func (m Model) normalKey(k tea.KeyMsg) (Model, tea.Cmd) {
 			return m, nil
 		case "gg":
 			m.cursor = 0
+			return m, nil
+		case "ds":
+			if key := m.currentKey(); key != "" {
+				m.d.Order.SetStatus(key, "")
+				m.save()
+				m.relist()
+			}
 			return m, nil
 		}
 		// cualquier otra tecla cancela la secuencia y se procesa normal
@@ -176,6 +184,8 @@ func (m Model) normalKey(k tea.KeyMsg) (Model, tea.Cmd) {
 			m.mode = renaming
 			m.input = e.Alias
 		}
+	case "s":
+		m.editStatus()
 	case "enter":
 		return m.open(m.selected())
 	default:
@@ -216,16 +226,27 @@ func (m Model) filterKey(k tea.KeyMsg) (Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) renameKey(k tea.KeyMsg) (Model, tea.Cmd) {
+func (m *Model) editStatus() {
+	if e := m.selected(); e != nil {
+		m.mode = editingStatus
+		m.input = e.Status
+	}
+}
+
+func (m Model) editKey(k tea.KeyMsg) (Model, tea.Cmd) {
 	switch k.Type {
 	case tea.KeyCtrlC:
 		return m.quit()
 	case tea.KeyEsc:
 		m.mode = normal
 	case tea.KeyEnter:
+		set := m.d.Order.SetAlias
+		if m.mode == editingStatus {
+			set = m.d.Order.SetStatus
+		}
 		m.mode = normal
 		if key := m.currentKey(); key != "" {
-			m.d.Order.SetAlias(key, m.input)
+			set(key, m.input)
 			m.save()
 			m.relist()
 		}
@@ -289,6 +310,7 @@ func (m *Model) relist() {
 	m.list = entries.Arrange(m.live, m.d.Order.Visible(entries.Keys(m.live)))
 	for i := range m.list {
 		m.list[i].Alias = m.d.Order.Alias(m.list[i].Key)
+		m.list[i].Status = m.d.Order.Status(m.list[i].Key)
 	}
 	m.applyFilter()
 	m.placeCursor(key)
@@ -303,7 +325,7 @@ func (m *Model) applyFilter() {
 	}
 	src := make([]string, len(m.list))
 	for i, e := range m.list {
-		src[i] = e.Pane.Session + " " + e.Alias + " " + e.Folder + " " + e.Title
+		src[i] = e.Pane.Session + " " + e.Alias + " " + e.Status + " " + e.Folder + " " + e.Title
 	}
 	matches := fuzzy.Find(m.filter, src)
 	sort.Slice(matches, func(i, j int) bool { return matches[i].Index < matches[j].Index })
@@ -396,9 +418,9 @@ func (m *Model) save() {
 	}
 }
 
-// listHeight: alto total menos header, separador, detalle y ayuda.
+// listHeight: alto total menos header, columnas, separador, detalle y ayuda.
 func (m *Model) listHeight() int {
-	if h := m.height - m.headerLines() - 3; h > 0 {
+	if h := m.height - m.headerLines() - 4; h > 0 {
 		return h
 	}
 	return 1
@@ -407,7 +429,7 @@ func (m *Model) listHeight() int {
 // scroll ajusta offset para que el cursor (y, si se puede, su encabezado)
 // quede visible.
 func (m *Model) scroll() {
-	rows := buildRows(m.shown)
+	rows := m.rows()
 	cur := -1
 	for i, r := range rows {
 		if r.entry == m.cursor {

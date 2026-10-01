@@ -24,6 +24,7 @@ type Entry struct {
 	Num        int    // 1..N según el orden; 0 hasta Arrange
 	LastPrompt string // último prompt del usuario
 	Alias      string // nombre puesto desde la TUI; reemplaza la ubicación
+	Status     string // texto libre puesto desde la TUI
 }
 
 type TitleSource func(sessionID, path string) transcript.Titles

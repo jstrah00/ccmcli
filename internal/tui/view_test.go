@@ -25,7 +25,7 @@ func TestViewHeadersIndicatorsAndDetail(t *testing.T) {
 	u.State = state.Unknown
 	_, m := setup(w, d, i, u)
 	v := sized(m, 80, 20).View()
-	for _, s := range []string{" a", " b", "●", "✓", "○", "?", " 1 ", " 4 ", "t-x",
+	for _, s := range []string{" a", " b", "●", "✔", "○", "?", " 1 ", " 4 ", "t-x",
 		"titulo actual · esperando input · hace 3m"} {
 		if !strings.Contains(v, s) {
 			t.Errorf("falta %q en:\n%s", s, v)
@@ -141,7 +141,7 @@ func TestHeaderBigShowsCenteredLogoAndSummaryBelow(t *testing.T) {
 		t.Fatalf("logo no centrado:\n%q\n%q", l[0], l[1])
 	}
 	sum := l[2]
-	for _, s := range []string{"5 sesiones", "1 ●", "2 ✓", "1 " + spinnerFrames[0]} {
+	for _, s := range []string{"5 sesiones", "1 ●", "2 ✔", "1 " + spinnerFrames[0]} {
 		if !strings.Contains(sum, s) {
 			t.Fatalf("falta %q en el resumen: %q", s, sum)
 		}
@@ -155,8 +155,10 @@ func TestHeaderBigShowsCenteredLogoAndSummaryBelow(t *testing.T) {
 	if d := left - right; d < -1 || d > 1 {
 		t.Fatalf("resumen no centrado (izq %d, der %d): %q", left, right, sum)
 	}
-	if strings.TrimSpace(l[3]) != "" || strings.TrimSpace(l[4]) != "a" {
-		t.Fatalf("esperaba línea en blanco y encabezado:\n%q\n%q", l[3], l[4])
+	if strings.TrimSpace(l[3]) != "" || !strings.HasPrefix(strings.TrimSpace(l[4]), "Sesión") ||
+		strings.Contains(l[5], "─") ||
+		!strings.HasPrefix(strings.TrimSpace(l[5]), "▌ a ") || !strings.HasSuffix(strings.TrimSpace(l[5]), " 5") {
+		t.Fatalf("esperaba línea en blanco, columnas y encabezado:\n%q\n%q\n%q", l[3], l[4], l[5])
 	}
 }
 
@@ -222,7 +224,7 @@ func TestViewAliasReplacesLocationAndRenameInput(t *testing.T) {
 		t.Fatalf("alias no reemplaza la ubicación:\n%s", v)
 	}
 	v = press(m, "r", "z").View()
-	if !strings.Contains(v, "nombre: backendz▏") || !strings.Contains(v, renameHelp) {
+	if !strings.Contains(v, "nombre: backendz▏") || !strings.Contains(v, "guardar") {
 		t.Fatalf("falta el input de renombre:\n%s", v)
 	}
 }
@@ -234,5 +236,36 @@ func TestViewLongAliasWidensLocation(t *testing.T) {
 	v := sized(send(m, tickMsg{}), 80, 10).View()
 	if !strings.Contains(v, "un nombre bastante largo  t-x") {
 		t.Fatalf("alias truncado:\n%s", v)
+	}
+}
+
+func TestViewStatusColumnOnlyWhenSomeHasStatus(t *testing.T) {
+	a, b := mk("a", 1, "x"), mk("a", 2, "y")
+	h, m := setup(a, b)
+	m = sized(m, 80, 12)
+	if v := m.View(); strings.Contains(v, "Status") || !strings.Contains(v, "Conversación") {
+		t.Fatalf("columna status sin statuses:\n%s", v)
+	}
+	h.ord.SetStatus(b.Key, "en review")
+	v := send(m, tickMsg{}).View()
+	if !strings.Contains(v, "Status") || !strings.Contains(v, "en review  t-y") {
+		t.Fatalf("falta la columna status:\n%s", v)
+	}
+	if v := press(send(m, tickMsg{}), "j", "s", "!").View(); !strings.Contains(v, "status: en review!▏") {
+		t.Fatalf("falta el input de status:\n%s", v)
+	}
+}
+
+func TestViewLongStatusFitsWidth(t *testing.T) {
+	e := mk("a", 1, "x")
+	h, m := setup(e)
+	h.ord.SetStatus(e.Key, strings.Repeat("status larguísimo 日本 ", 10))
+	m = send(m, tickMsg{})
+	for _, width := range []int{12, 30, 80} {
+		for _, line := range lines(sized(m, width, 12).View()) {
+			if w := lipgloss.Width(line); w > width {
+				t.Fatalf("ancho %d: línea de %d columnas: %q", width, w, line)
+			}
+		}
 	}
 }

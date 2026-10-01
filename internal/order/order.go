@@ -20,9 +20,10 @@ func Key(session string, window, pane int, cwd string) string {
 }
 
 type Store struct {
-	Order   []string          `json:"order"`
-	Hidden  []string          `json:"hidden"`
-	Aliases map[string]string `json:"aliases,omitempty"`
+	Order    []string          `json:"order"`
+	Hidden   []string          `json:"hidden"`
+	Aliases  map[string]string `json:"aliases,omitempty"`
+	Statuses map[string]string `json:"statuses,omitempty"`
 }
 
 func Load(path string) (*Store, error) {
@@ -135,14 +136,21 @@ func (s *Store) RestoreAll(live []string) {
 func (s *Store) Alias(key string) string { return s.Aliases[key] }
 
 // SetAlias con nombre vacío borra el alias.
-func (s *Store) SetAlias(key, name string) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		delete(s.Aliases, key)
+func (s *Store) SetAlias(key, name string) { setIn(&s.Aliases, key, name) }
+
+func (s *Store) Status(key string) string { return s.Statuses[key] }
+
+// SetStatus con texto vacío borra el status.
+func (s *Store) SetStatus(key, status string) { setIn(&s.Statuses, key, status) }
+
+func setIn(m *map[string]string, key, v string) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		delete(*m, key)
 		return
 	}
-	if s.Aliases == nil {
-		s.Aliases = map[string]string{}
+	if *m == nil {
+		*m = map[string]string{}
 	}
-	s.Aliases[key] = name
+	(*m)[key] = v
 }

@@ -9,20 +9,23 @@ Con varias sesiones de Claude Code en paralelo, repartidas en sesiones y windows
 ```
                 ▄▀▀ ▄▀▀ █▄ ▄█  ▄▀▀ █   █
                 ▀▄▄ ▀▄▄ █ ▀ █  ▀▄▄ █▄▄ █
-               6 sesiones · 1 ●  1 ✓  1 ⠼
+               6 sesiones · 1 ●  1 ✔  1 ⠼
 
- homelab
-›  1 ✓  :1                Cambios pendientes por pushear
- stow_dotfiles
-   2 ●  :1                Sesión de test
- personal
-   3 ⠼  :1 ccmcli         Rediseñar el header
+        Sesión            Status     Conversación
+ ▌ homelab                                    1
+▎  1 ✔  :1                en review  Cambios pendientes por pushear
+
+ ▌ stow_dotfiles                              1
+   2 ●  :1                           Sesión de test
+
+ ▌ personal                                   1
+   3 ⠼  :1 ccmcli                    Rediseñar el header
  ────────────────────────────────────────────
  arreglá el login · terminó · hace 12m
- j/k mover · ⏎ ir · / filtrar · r renombrar · dd ocultar · p pegar · U restaurar · q salir
+  j/k mover  ⏎ ir  / filtrar  r renombrar  s status  ds borrar status  dd ocultar  p pegar  U restaurar  q salir
 ```
 
-Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más la carpeta si difiere de la sesión, o el nombre que le pongas con `r`) y título. Abajo va el último prompt de la sesión seleccionada.
+Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más la carpeta si difiere de la sesión, o el nombre que le pongas con `r`), status (texto libre puesto con `s`; la columna aparece solo si alguna entrada tiene) y título. Abajo va el último prompt de la sesión seleccionada.
 
 ## Estados
 
@@ -30,7 +33,7 @@ Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más 
 |---|---|
 | `●` rojo | espera tu input (permiso o pregunta) |
 | `⠋` amarillo | trabajando |
-| `✓` verde | terminó y no lo viste |
+| `✔` verde | terminó y no lo viste |
 | `○` gris | idle / ya lo viste |
 | `?` | sin datos todavía (sesión abierta antes de instalar los hooks) |
 
@@ -43,6 +46,8 @@ Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más 
 | `1`–`9` (y `10`+) | ir directo a esa entrada |
 | `/` | filtrar (fuzzy); `Enter` lo fija, `Esc` lo limpia |
 | `r` | renombrar la entrada (reemplaza `:2 …`); vacío vuelve al original |
+| `s` | poner/editar el status de la entrada; vacío lo borra |
+| `ds` | borrar el status |
 | `dd` | ocultar la entrada (queda en el registro) |
 | `p` / `P` | pegarla debajo / arriba: así reordenás |
 | `U` | volver a mostrar todas las ocultas |
@@ -53,10 +58,10 @@ El orden, las ocultas y los nombres se guardan entre aperturas.
 ## Cómo funciona
 
 - **Estado:** los hooks de Claude Code llaman a `ccm hook <evento>`, que escribe un JSON por pane en `~/.cache/ccm/panes/`. Tarda unos 6 ms, nunca escribe a stdout y siempre sale con 0.
-- **Visto:** hooks de tmux llaman a `ccm seen` al cambiar de window o sesión, y lo que estás mirando pasa de `✓` a `○`.
+- **Visto:** hooks de tmux llaman a `ccm seen` al cambiar de window o sesión, y lo que estás mirando pasa de `✔` a `○`.
 - **Lista:** `tmux list-panes` filtrado por los panes que corren `claude`, cruzado con esos JSON.
 - **Títulos:** del transcript de cada sesión, con lectura incremental.
-- **Orden y nombres:** `~/.local/state/ccm/order.json`. Respeta `XDG_CACHE_HOME` y `XDG_STATE_HOME`.
+- **Orden, nombres y status:** `~/.local/state/ccm/order.json`. Respeta `XDG_CACHE_HOME` y `XDG_STATE_HOME`.
 
 ## Instalación
 
