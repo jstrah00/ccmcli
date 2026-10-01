@@ -16,7 +16,7 @@ type keyHelp struct{ key, desc string }
 
 var (
 	normalHelp = []keyHelp{
-		{"j/k", "mover"}, {"⏎", "ir"}, {"/", "filtrar"}, {"r", "renombrar"}, {"s", "status"}, {"ds", "borrar status"},
+		{"j/k", "mover"}, {"⏎", "ir"}, {"/", "filtrar"}, {"r", "renombrar"}, {"dr", "renombrar de cero"}, {"s", "status"}, {"ds", "borrar status"},
 		{"dd", "ocultar"}, {"p", "pegar"}, {"U", "restaurar"}, {"q", "salir"},
 	}
 	filterHelp = []keyHelp{{"⏎", "aceptar"}, {"esc", "limpiar"}, {"↑/↓", "mover"}}

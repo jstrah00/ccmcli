@@ -34,7 +34,7 @@ const (
 const (
 	refreshEvery = time.Second
 	spinEvery    = 100 * time.Millisecond
-	seqTimeout   = time.Second            // dd, ds, gg
+	seqTimeout   = time.Second            // dd, ds, dr, gg
 	digitTimeout = 300 * time.Millisecond // segundo dígito
 )
 
@@ -147,6 +147,12 @@ func (m Model) normalKey(k tea.KeyMsg) (Model, tea.Cmd) {
 				m.d.Order.SetStatus(key, "")
 				m.save()
 				m.relist()
+			}
+			return m, nil
+		case "dr":
+			if m.selected() != nil {
+				m.mode = renaming
+				m.input = ""
 			}
 			return m, nil
 		}

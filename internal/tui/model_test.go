@@ -378,6 +378,20 @@ func TestRenamePrefillsAndEmptyClears(t *testing.T) {
 	}
 }
 
+func TestDROpensEmptyRename(t *testing.T) {
+	a := mk("s", 1, "a")
+	h, m := setup(a)
+	h.ord.SetAlias(a.Key, "viejo")
+	m = press(send(m, tickMsg{}), "d", "r")
+	if m.mode != renaming || m.input != "" || len(m.list) != 1 {
+		t.Fatalf("mode=%v input=%q", m.mode, m.input)
+	}
+	m = press(m, "nuevo", "enter")
+	if h.ord.Alias(a.Key) != "nuevo" || m.mode != normal || h.saves != 1 {
+		t.Fatalf("alias=%q mode=%v saves=%d", h.ord.Alias(a.Key), m.mode, h.saves)
+	}
+}
+
 func TestFilterMatchesAlias(t *testing.T) {
 	a, b := mk("s", 1, "a"), mk("s", 2, "b")
 	h, m := setup(a, b)

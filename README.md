@@ -22,7 +22,7 @@ Con varias sesiones de Claude Code en paralelo, repartidas en sesiones y windows
    3 ⠼  :1 ccmcli                    Rediseñar el header
  ────────────────────────────────────────────
  arreglá el login · terminó · hace 12m
-  j/k mover  ⏎ ir  / filtrar  r renombrar  s status  ds borrar status  dd ocultar  p pegar  U restaurar  q salir
+  j/k mover  ⏎ ir  / filtrar  r renombrar  dr renombrar de cero  s status  ds borrar status  dd ocultar  p pegar  U restaurar  q salir
 ```
 
 Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más la carpeta si difiere de la sesión, o el nombre que le pongas con `r`), status (texto libre puesto con `s`; la columna aparece solo si alguna entrada tiene) y título. Abajo va el último prompt de la sesión seleccionada.
@@ -46,6 +46,7 @@ Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más 
 | `1`–`9` (y `10`+) | ir directo a esa entrada |
 | `/` | filtrar (fuzzy); `Enter` lo fija, `Esc` lo limpia |
 | `r` | renombrar la entrada (reemplaza `:2 …`); vacío vuelve al original |
+| `dr` | renombrar arrancando con el input vacío |
 | `s` | poner/editar el status de la entrada; vacío lo borra |
 | `ds` | borrar el status |
 | `dd` | ocultar la entrada (queda en el registro) |
