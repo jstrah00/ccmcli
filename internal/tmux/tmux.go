@@ -115,6 +115,13 @@ func (e Exec) PaneActive(paneID string) (bool, error) {
 	return len(f) == 2 && f[0] == "1" && f[1] != "0", nil
 }
 
+// CurrentPane: sin -t, tmux resuelve el pane activo del cliente que abrió el
+// popup.
+func (e Exec) CurrentPane() (string, error) {
+	out, err := e.run("display-message", "-p", "#{pane_id}")
+	return strings.TrimSpace(out), err
+}
+
 func switchArgs(p PaneInfo) [][]string {
 	return [][]string{
 		{"switch-client", "-t", "=" + p.Session},

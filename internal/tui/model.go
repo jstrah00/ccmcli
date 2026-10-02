@@ -20,6 +20,7 @@ type Deps struct {
 	SaveOrder func() error
 	Switch    func(tmux.PaneInfo) error
 	Now       func() time.Time
+	Current   string // pane desde el que se abrió el popup
 }
 
 type mode int
@@ -68,6 +69,11 @@ type Model struct {
 func New(d Deps) Model {
 	m := Model{d: d, width: 80, height: 24}
 	m.reload()
+	for i := range m.shown {
+		if m.shown[i].Pane.PaneID == d.Current {
+			m.cursor = i
+		}
+	}
 	return m
 }
 

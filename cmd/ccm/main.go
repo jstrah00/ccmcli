@@ -129,12 +129,18 @@ func runTUI(stderr io.Writer) int {
 		return entries.Collect(panes, states, titles.Get), nil
 	}
 
+	cur, err := tm.CurrentPane()
+	if err != nil {
+		logf("%v", err)
+	}
+
 	m := tui.New(tui.Deps{
 		Load:      load,
 		Order:     ord,
 		SaveOrder: func() error { return ord.Save(paths.OrderPath()) },
 		Switch:    tm.Switch,
 		Now:       time.Now,
+		Current:   cur,
 	})
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Fprintln(stderr, "ccm:", err)

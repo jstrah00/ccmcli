@@ -448,3 +448,25 @@ func TestDSClearsStatus(t *testing.T) {
 		t.Fatalf("status=%q mode=%v saves=%d", h.ord.Status(a.Key), m.mode, h.saves)
 	}
 }
+
+func TestOpensOnCurrentPane(t *testing.T) {
+	es := []entries.Entry{mk("a", 1, "x"), mk("a", 2, "y"), mk("a", 3, "z")}
+	m := New(Deps{
+		Load:    func() ([]entries.Entry, error) { return es, nil },
+		Order:   &order.Store{},
+		Now:     func() time.Time { return t0 },
+		Current: es[1].Pane.PaneID,
+	})
+	if got := sel(m); got != "y" {
+		t.Fatalf("got %q, want y", got)
+	}
+	m = New(Deps{
+		Load:    func() ([]entries.Entry, error) { return es, nil },
+		Order:   &order.Store{},
+		Now:     func() time.Time { return t0 },
+		Current: "%nada",
+	})
+	if got := sel(m); got != "x" {
+		t.Fatalf("got %q, want x", got)
+	}
+}
