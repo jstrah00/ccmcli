@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"ccm/internal/proc"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
 )
@@ -98,6 +99,46 @@ func TestRunWithoutPaneIsNoop(t *testing.T) {
 	all, _ := d.Store.All()
 	if len(all) != 0 {
 		t.Fatalf("escribió estado sin pane: %+v", all)
+	}
+}
+
+// Sesión que pasó al daemon: sus hooks no traen TMUX_PANE y se resuelven por
+// la sesión resumida y, desde ahí, por el pty-host.
+func TestRunResolvesPaneFromBgHost(t *testing.T) {
+	d := deps(t, false)
+	d.PaneID = ""
+	_ = d.Store.Save(state.Pane{PaneID: "%5", SessionID: "old", State: state.Working, Since: t0})
+	_ = d.Store.Save(state.Pane{PaneID: "%6", SessionID: "otra", State: state.Idle, Since: t0})
+	d.BgHost = func() (proc.BgHost, bool) { return proc.BgHost{SessionID: "host", Resumed: "old"}, true }
+
+	if err := Run("ask", strings.NewReader(`{"session_id":"nueva"}`), d); err != nil {
+		t.Fatal(err)
+	}
+	p, _ := d.Store.Load("%5")
+	if p.State != state.Waiting || p.PtyHost != "host" || p.SessionID != "nueva" {
+		t.Fatalf("got %+v", p)
+	}
+	// ya no matchea por la sesión resumida: lo encuentra por el host
+	if err := Run("stop", strings.NewReader(`{"session_id":"otra-mas"}`), d); err != nil {
+		t.Fatal(err)
+	}
+	if p, _ := d.Store.Load("%5"); p.State != state.Done {
+		t.Fatalf("state = %q", p.State)
+	}
+	if p, _ := d.Store.Load("%6"); p.State != state.Idle {
+		t.Fatalf("tocó otro pane: %+v", p)
+	}
+}
+
+func TestRunBgHostWithoutMatchIsNoop(t *testing.T) {
+	d := deps(t, false)
+	d.PaneID = ""
+	d.BgHost = func() (proc.BgHost, bool) { return proc.BgHost{SessionID: "host", Resumed: "x"}, true }
+	if err := Run("prompt", strings.NewReader(input), d); err != nil {
+		t.Fatal(err)
+	}
+	if all, _ := d.Store.All(); len(all) != 0 {
+		t.Fatalf("escribió estado: %+v", all)
 	}
 }
 

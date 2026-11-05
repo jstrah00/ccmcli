@@ -18,6 +18,7 @@ import (
 	"ccm/internal/hook"
 	"ccm/internal/order"
 	"ccm/internal/paths"
+	"ccm/internal/proc"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
 	"ccm/internal/transcript"
@@ -77,6 +78,7 @@ func runHook(event string, stdin io.Reader) {
 			}
 			return tmux.Exec{Bin: bin}.PaneActive(id)
 		},
+		BgHost: func() (proc.BgHost, bool) { return proc.FindBgHost(os.Getpid(), proc.PS) },
 	}
 	if err := hook.Run(event, stdin, d); err != nil {
 		logf("hook %s: %v", event, err)

@@ -32,6 +32,9 @@ type Pane struct {
 	State          State     `json:"state"`
 	Since          time.Time `json:"since"`
 	LastPrompt     string    `json:"last_prompt,omitempty"`
+	// PtyHost: --session-id del pty-host del daemon cuando la sesión corre en
+	// background; sus hooks no traen TMUX_PANE y se resuelven por este campo.
+	PtyHost string `json:"pty_host,omitempty"`
 }
 
 // Apply devuelve p con el estado st. Since solo se mueve si el estado cambia.

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"ccm/internal/proc"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
 )
@@ -26,13 +27,19 @@ type Deps struct {
 	PaneID     string
 	Now        func() time.Time
 	PaneActive func(paneID string) (bool, error)
+	// BgHost se usa cuando falta PaneID: el hook corre en el daemon.
+	BgHost func() (proc.BgHost, bool)
 }
 
 var ErrUnknownEvent = errors.New("evento desconocido")
 
 func Run(event string, stdin io.Reader, d Deps) error {
+	var host string
 	if d.PaneID == "" {
-		return nil // claude fuera de tmux: no hay a qué pane asociarlo
+		d.PaneID, host = resolveBg(d)
+		if d.PaneID == "" {
+			return nil // claude fuera de tmux: no hay a qué pane asociarlo
+		}
 	}
 	var in Input
 	if b, err := io.ReadAll(stdin); err == nil && len(b) > 0 {
@@ -81,10 +88,44 @@ func Run(event string, stdin io.Reader, d Deps) error {
 	if in.TranscriptPath != "" {
 		p.TranscriptPath = in.TranscriptPath
 	}
+	if host != "" {
+		p.PtyHost = host
+	}
 	if event == "prompt" && in.Prompt != "" {
 		p.LastPrompt = oneLine(in.Prompt)
 	}
 	return d.Store.Save(state.Apply(p, target, d.Now()))
+}
+
+// resolveBg busca el pane de una sesión que pasó al daemon: primero por el
+// pty-host ya asociado y si no por la sesión que el host resumió, que es la
+// que registraron los hooks cuando todavía corría en el pane.
+func resolveBg(d Deps) (paneID, host string) {
+	if d.BgHost == nil {
+		return "", ""
+	}
+	h, ok := d.BgHost()
+	if !ok {
+		return "", ""
+	}
+	all, err := d.Store.All()
+	if err != nil {
+		return "", ""
+	}
+	for _, p := range all {
+		if p.PtyHost == h.SessionID {
+			return p.PaneID, h.SessionID
+		}
+	}
+	if h.Resumed == "" {
+		return "", ""
+	}
+	for _, p := range all {
+		if p.SessionID == h.Resumed {
+			return p.PaneID, h.SessionID
+		}
+	}
+	return "", ""
 }
 
 // maxPrompt: runas del último prompt que se guardan; alcanza para una línea
