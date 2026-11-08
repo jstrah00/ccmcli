@@ -37,6 +37,8 @@ Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más 
 | `○` gris | idle / ya lo viste |
 | `?` | sin datos todavía (sesión abierta antes de instalar los hooks) |
 
+Al lado del estado, un `◉` azul que respira marca las sesiones con remote-control activo (la columna aparece solo si hay alguna). Sale de `bridgeSessionId` en `~/.claude/sessions/<pid>.json`, que Claude Code no pasa a los hooks.
+
 ## Teclas
 
 | Tecla | Acción |

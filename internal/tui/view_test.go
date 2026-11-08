@@ -269,3 +269,31 @@ func TestViewLongStatusFitsWidth(t *testing.T) {
 		}
 	}
 }
+
+func TestViewRemoteColumn(t *testing.T) {
+	r := mk("a", 1, "x")
+	r.State, r.Remote = state.Idle, true
+	o := mk("a", 2, "y")
+	o.State = state.Idle
+	_, m := setup(r, o)
+	v := sized(m, 80, 20).View()
+	if strings.Count(v, remoteGlyph) != 1 || !strings.Contains(v, "remote-control") {
+		t.Fatalf("columna remote incorrecta:\n%s", v)
+	}
+	for _, l := range strings.Split(v, "\n") {
+		if w := lipgloss.Width(l); w > 80 {
+			t.Fatalf("línea de %d columnas: %q", w, l)
+		}
+	}
+
+	_, m = setup(o)
+	if v := sized(m, 80, 20).View(); strings.Contains(v, remoteGlyph) || strings.Contains(v, "remote-control") {
+		t.Fatalf("sin remote no debería haber columna:\n%s", v)
+	}
+}
+
+func TestRemoteBreathes(t *testing.T) {
+	if remoteStyle(0).GetForeground() == remoteStyle(len(remoteFrames)/2).GetForeground() {
+		t.Fatal("mismo color en valle y pico")
+	}
+}

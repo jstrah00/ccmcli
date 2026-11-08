@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -22,6 +23,27 @@ var (
 	colIdle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#a8a095"))
 	colUnknown = lipgloss.NewStyle().Foreground(lipgloss.Color("#7a7268"))
 )
+
+const remoteGlyph = "◉"
+
+// remoteFrames: el indicador de remote-control "respira" entre un azul
+// apagado y uno vivo; un ciclo dura len(remoteFrames) * spinEvery.
+var remoteFrames = breathe([3]float64{40, 80, 110}, [3]float64{125, 207, 255}, 24)
+
+func breathe(lo, hi [3]float64, n int) []lipgloss.Style {
+	out := make([]lipgloss.Style, n)
+	for i := range out {
+		t := (1 - math.Cos(2*math.Pi*float64(i)/float64(n))) / 2
+		var c [3]int
+		for k := range c {
+			c[k] = int(math.Round(lo[k] + (hi[k]-lo[k])*t))
+		}
+		out[i] = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", c[0], c[1], c[2])))
+	}
+	return out
+}
+
+func remoteStyle(frame int) lipgloss.Style { return remoteFrames[frame%len(remoteFrames)] }
 
 func indicator(st state.State, frame int) string {
 	style, glyph := indicatorParts(st, frame)

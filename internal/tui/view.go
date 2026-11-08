@@ -108,11 +108,21 @@ func (m Model) View() string {
 	return b.String()
 }
 
-// prefixW: marca(2) + número(3) + indicador(1) + 2.
-const prefixW = 2 + 3 + 1 + 2
+// prefixW: marca(2) + número(3) + indicador(1) + [remote(2)] + 2.
+func (m Model) prefixW() int { return 2 + 3 + 1 + m.remoteW() + 2 }
+
+// remoteW es 0 (sin columna) si ninguna entrada tiene remote-control.
+func (m Model) remoteW() int {
+	for _, e := range m.list {
+		if e.Remote {
+			return 2
+		}
+	}
+	return 0
+}
 
 func (m Model) columnsLine(locW, stW int) string {
-	s := strings.Repeat(" ", prefixW) + fit("Sesión", locW) + "  "
+	s := strings.Repeat(" ", m.prefixW()) + fit("Sesión", locW) + "  "
 	if stW > 0 {
 		s += fit(statusTitle, stW) + "  "
 	}
@@ -149,9 +159,16 @@ func (m Model) renderEntry(e entries.Entry, selected bool, locW, stW int) string
 		mark = paint(styleAccent, "▎ ")
 	}
 	indStyle, glyph := indicatorParts(e.State, m.frame)
-	titleW := m.width - (prefixW + locW + 2)
-	line := mark + paint(num, fmt.Sprintf("%2d ", e.Num)) + paint(indStyle.Bold(true), glyph) +
-		paint(text, "  ") + paint(text.Bold(true), fit(location(e), locW)) + paint(text, "  ")
+	titleW := m.width - (m.prefixW() + locW + 2)
+	line := mark + paint(num, fmt.Sprintf("%2d ", e.Num)) + paint(indStyle.Bold(true), glyph)
+	if m.remoteW() > 0 {
+		rc := paint(text, " ")
+		if e.Remote {
+			rc = paint(remoteStyle(m.frame), remoteGlyph)
+		}
+		line += paint(text, " ") + rc
+	}
+	line += paint(text, "  ") + paint(text.Bold(true), fit(location(e), locW)) + paint(text, "  ")
 	if stW > 0 {
 		titleW -= stW + 2
 		line += paint(styleStatus, fit(e.Status, stW)) + paint(text, "  ")
@@ -221,6 +238,9 @@ func (m Model) detailLine() string {
 		parts = append(parts, title)
 	}
 	parts = append(parts, stateLabel(e.State))
+	if e.Remote {
+		parts = append(parts, "remote-control")
+	}
 	if e.State != state.Unknown && !e.Since.IsZero() {
 		parts = append(parts, humanSince(m.d.Now().Sub(e.Since)))
 	}

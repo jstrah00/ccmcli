@@ -25,6 +25,7 @@ type Entry struct {
 	LastPrompt string // último prompt del usuario
 	Alias      string // nombre puesto desde la TUI; reemplaza la ubicación
 	Status     string // texto libre puesto desde la TUI
+	Remote     bool   // remote-control activo
 }
 
 type TitleSource func(sessionID, path string) transcript.Titles
@@ -37,7 +38,7 @@ func isClaude(cmd string) bool {
 	return cmd == "claude" || versionName.MatchString(cmd)
 }
 
-func Collect(panes []tmux.PaneInfo, states map[string]state.Pane, titles TitleSource) []Entry {
+func Collect(panes []tmux.PaneInfo, states map[string]state.Pane, titles TitleSource, remote map[string]bool) []Entry {
 	var out []Entry
 	for _, p := range panes {
 		if !isClaude(p.Command) {
@@ -53,6 +54,7 @@ func Collect(panes []tmux.PaneInfo, states map[string]state.Pane, titles TitleSo
 		}
 		if st, ok := states[p.PaneID]; ok {
 			e.State, e.Since, e.LastPrompt = st.State, st.Since, st.LastPrompt
+			e.Remote = remote[st.SessionID]
 			if st.Cwd != "" {
 				e.Folder = filepath.Base(st.Cwd)
 			}

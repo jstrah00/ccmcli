@@ -19,6 +19,7 @@ import (
 	"ccm/internal/order"
 	"ccm/internal/paths"
 	"ccm/internal/proc"
+	"ccm/internal/remote"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
 	"ccm/internal/transcript"
@@ -128,7 +129,7 @@ func runTUI(stderr io.Writer) int {
 			entries.Purge(store, panes, states)
 			purged = true
 		}
-		return entries.Collect(panes, states, titles.Get), nil
+		return entries.Collect(panes, states, titles.Get, remote.Active(remote.Dir())), nil
 	}
 
 	cur, err := tm.CurrentPane()

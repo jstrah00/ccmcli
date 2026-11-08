@@ -28,7 +28,7 @@ func TestCollect(t *testing.T) {
 	states := map[string]state.Pane{
 		"%1": {PaneID: "%1", SessionID: "S1", TranscriptPath: "/t1", Cwd: "/h/proj", State: state.Waiting, Since: t0, LastPrompt: "hacé X"},
 	}
-	es := Collect(panes, states, titles)
+	es := Collect(panes, states, titles, map[string]bool{"S1": true})
 	if es[0].LastPrompt != "hacé X" {
 		t.Fatalf("LastPrompt = %q", es[0].LastPrompt)
 	}
@@ -39,7 +39,10 @@ func TestCollect(t *testing.T) {
 	if a.State != state.Waiting || !a.Since.Equal(t0) || a.Title != "first" || a.Detail != "last" || a.Folder != "proj" {
 		t.Fatalf("entrada con estado: %+v", a)
 	}
-	if b.State != state.Unknown || b.Title != "" || b.Folder != "proj" {
+	if !a.Remote {
+		t.Fatalf("entrada con remote-control sin Remote: %+v", a)
+	}
+	if b.State != state.Unknown || b.Title != "" || b.Folder != "proj" || b.Remote {
 		t.Fatalf("entrada sin estado: %+v", b)
 	}
 	// Dos CC en la misma window y mismo cwd: claves distintas.
@@ -49,7 +52,7 @@ func TestCollect(t *testing.T) {
 }
 
 func TestArrangeNumbers(t *testing.T) {
-	es := Collect(panes, nil, titles)
+	es := Collect(panes, nil, titles, nil)
 	got := Arrange(es, []string{es[1].Key, es[0].Key})
 	if got[0].Pane.PaneID != "%2" || got[0].Num != 1 || got[1].Pane.PaneID != "%1" || got[1].Num != 2 {
 		t.Fatalf("got %+v", got)
@@ -75,7 +78,7 @@ func TestCollectAcceptsVersionNamedBinary(t *testing.T) {
 		{PaneID: "%3", Session: "s", Window: 3, Pane: 1, Command: "zsh", Path: "/h/proj"},
 		{PaneID: "%4", Session: "s", Window: 4, Pane: 1, Command: "node", Path: "/h/proj"},
 	}
-	es := Collect(ps, nil, titles)
+	es := Collect(ps, nil, titles, nil)
 	if len(es) != 2 {
 		t.Fatalf("esperaba 2 entradas (claude + binario versionado), got %d", len(es))
 	}
