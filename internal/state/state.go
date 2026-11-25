@@ -35,6 +35,9 @@ type Pane struct {
 	// PtyHost: --session-id del pty-host del daemon cuando la sesión corre en
 	// background; sus hooks no traen TMUX_PANE y se resuelven por este campo.
 	PtyHost string `json:"pty_host,omitempty"`
+	// TmuxSession se anota en start para saber dónde retomar la sesión si el
+	// pane muere sin pasar por el hook end.
+	TmuxSession string `json:"tmux_session,omitempty"`
 }
 
 // Apply devuelve p con el estado st. Since solo se mueve si el estado cambia.

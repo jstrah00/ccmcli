@@ -47,6 +47,9 @@ func (m Model) header() []string {
 
 // status: total (o filtro) + contadores por estado, si no se está filtrando.
 func (m Model) status() string {
+	if m.mode == closedView {
+		return m.closedStatus()
+	}
 	st := m.topRight()
 	if s := m.summary(); s != "" && m.mode != filtering && m.filter == "" {
 		st += styleDim.Render(" · ") + s

@@ -17,7 +17,7 @@ type keyHelp struct{ key, desc string }
 var (
 	normalHelp = []keyHelp{
 		{"j/k", "mover"}, {"⏎", "ir"}, {"/", "filtrar"}, {"r", "renombrar"}, {"dr", "renombrar de cero"}, {"s", "status"}, {"ds", "borrar status"},
-		{"dd", "ocultar"}, {"p", "pegar"}, {"U", "restaurar"}, {"q", "salir"},
+		{"dd", "ocultar"}, {"p", "pegar"}, {"U", "restaurar"}, {"c", "cerradas"}, {"q", "salir"},
 	}
 	filterHelp = []keyHelp{{"⏎", "aceptar"}, {"esc", "limpiar"}, {"↑/↓", "mover"}}
 	editHelp   = []keyHelp{{"⏎", "guardar"}, {"esc", "cancelar"}, {"", "vacío borra"}}
@@ -71,6 +71,9 @@ var (
 func (m Model) View() string {
 	if m.quitting {
 		return ""
+	}
+	if m.mode == closedView {
+		return m.closedViewRender()
 	}
 	var b strings.Builder
 	for _, l := range m.header() {
@@ -192,6 +195,8 @@ func (m Model) helpLine() string {
 		help = filterHelp
 	case renaming, editingStatus:
 		help = editHelp
+	case closedView:
+		help = closedHelp
 	}
 	var b strings.Builder
 	used := 0

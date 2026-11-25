@@ -1,9 +1,11 @@
 package entries
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
+	"ccm/internal/closed"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
 	"ccm/internal/transcript"
@@ -64,7 +66,7 @@ func TestPurgeDeletesDeadPanes(t *testing.T) {
 	_ = s.Save(state.Pane{PaneID: "%1", State: state.Idle, Since: t0})
 	_ = s.Save(state.Pane{PaneID: "%99", State: state.Idle, Since: t0})
 	all, _ := s.All()
-	Purge(s, panes, all)
+	Purge(s, closed.Store{}, panes, all, t0)
 	after, _ := s.All()
 	if _, ok := after["%99"]; ok || len(after) != 1 {
 		t.Fatalf("after = %+v", after)
@@ -84,5 +86,23 @@ func TestCollectAcceptsVersionNamedBinary(t *testing.T) {
 	}
 	if es[1].Pane.PaneID != "%2" {
 		t.Fatalf("falta el pane del binario versionado: %+v", es)
+	}
+}
+
+func TestPurgeRecordsDead(t *testing.T) {
+	s := state.Store{Dir: t.TempDir()}
+	c := closed.Store{Path: filepath.Join(t.TempDir(), "closed.json")}
+	_ = s.Save(state.Pane{PaneID: "%1", SessionID: "s1", LastPrompt: "vivo", State: state.Idle, Since: t0})
+	_ = s.Save(state.Pane{PaneID: "%99", SessionID: "s2", LastPrompt: "x", TmuxSession: "work", State: state.Idle, Since: t0})
+	all, _ := s.All()
+	now := t0.Add(time.Hour)
+	Purge(s, c, panes, all, now)
+	l := c.List()
+	if len(l) != 1 || l[0].SessionID != "s2" || l[0].TmuxSession != "work" || !l[0].ClosedAt.Equal(now) {
+		t.Fatalf("cerradas = %+v", l)
+	}
+	after, _ := s.All()
+	if _, ok := after["%1"]; !ok || len(after) != 1 {
+		t.Fatalf("after = %+v", after)
 	}
 }

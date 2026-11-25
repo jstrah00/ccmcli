@@ -9,9 +9,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/sahilm/fuzzy"
 
+	"ccm/internal/closed"
 	"ccm/internal/entries"
 	"ccm/internal/order"
 	"ccm/internal/tmux"
+	"ccm/internal/transcript"
 )
 
 type Deps struct {
@@ -21,6 +23,10 @@ type Deps struct {
 	Switch    func(tmux.PaneInfo) error
 	Now       func() time.Time
 	Current   string // pane desde el que se abrió el popup
+	// Sesiones cerradas; sin Closed la tecla c no hace nada.
+	Closed func() []closed.Session
+	Titles func(sessionID, path string) transcript.Titles
+	Resume func(closed.Session) (tmux.PaneInfo, error)
 }
 
 type mode int
@@ -30,6 +36,7 @@ const (
 	filtering
 	renaming
 	editingStatus
+	closedView
 )
 
 const (
@@ -64,6 +71,12 @@ type Model struct {
 	offset   int // primera fila visible
 	err      error
 	quitting bool
+
+	closedAll   []closedRow
+	closedShown []closedRow // closedAll filtrada por query
+	query       string
+	ccursor     int // índice en closedShown
+	coffset     int
 }
 
 func New(d Deps) Model {
@@ -96,6 +109,7 @@ func (m *Model) after(d time.Duration) tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	next, cmd := m.update(msg)
 	next.scroll()
+	next.closedScroll()
 	return next, cmd
 }
 
@@ -124,6 +138,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 			return m.filterKey(msg)
 		case renaming, editingStatus:
 			return m.editKey(msg)
+		case closedView:
+			return m.closedKey(msg)
 		}
 		return m.normalKey(msg)
 	}
@@ -198,6 +214,8 @@ func (m Model) normalKey(k tea.KeyMsg) (Model, tea.Cmd) {
 		}
 	case "s":
 		m.editStatus()
+	case "c":
+		m.openClosed()
 	case "enter":
 		return m.open(m.selected())
 	default:

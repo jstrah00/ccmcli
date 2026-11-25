@@ -14,6 +14,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"ccm/internal/closed"
 	"ccm/internal/entries"
 	"ccm/internal/hook"
 	"ccm/internal/order"
@@ -80,6 +81,18 @@ func runHook(event string, stdin io.Reader) {
 			return tmux.Exec{Bin: bin}.PaneActive(id)
 		},
 		BgHost: func() (proc.BgHost, bool) { return proc.FindBgHost(os.Getpid(), proc.PS) },
+		Closed: closed.Store{Path: paths.ClosedPath()},
+		PaneLoc: func(id string) (tmux.PaneInfo, error) {
+			bin, err := tmux.Find()
+			if err != nil {
+				return tmux.PaneInfo{}, err
+			}
+			return tmux.Exec{Bin: bin}.PaneLoc(id)
+		},
+		Labels: func(key string) (string, string) {
+			ord, _ := order.Load(paths.OrderPath())
+			return ord.Alias(key), ord.Status(key)
+		},
 	}
 	if err := hook.Run(event, stdin, d); err != nil {
 		logf("hook %s: %v", event, err)
@@ -110,6 +123,7 @@ func runTUI(stderr io.Writer) int {
 	tm := tmux.Exec{Bin: bin}
 	store := state.Store{Dir: paths.PanesDir()}
 	titles := transcript.NewCache(paths.TitlesDir())
+	closedStore := closed.Store{Path: paths.ClosedPath()}
 	ord, err := order.Load(paths.OrderPath())
 	if err != nil {
 		logf("%v", err) // orden por defecto; se reescribe en el próximo cambio
@@ -126,7 +140,7 @@ func runTUI(stderr io.Writer) int {
 			return nil, err
 		}
 		if !purged {
-			entries.Purge(store, panes, states)
+			entries.Purge(store, closedStore, panes, states, time.Now())
 			purged = true
 		}
 		return entries.Collect(panes, states, titles.Get, remote.Active(remote.Dir())), nil
@@ -144,6 +158,9 @@ func runTUI(stderr io.Writer) int {
 		Switch:    tm.Switch,
 		Now:       time.Now,
 		Current:   cur,
+		Closed:    closedStore.List,
+		Titles:    titles.Get,
+		Resume:    func(c closed.Session) (tmux.PaneInfo, error) { return closed.Resume(c, tm) },
 	})
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Fprintln(stderr, "ccm:", err)

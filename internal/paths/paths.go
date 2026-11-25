@@ -18,7 +18,8 @@ func CacheDir() string { return filepath.Join(base("XDG_CACHE_HOME", ".cache"), 
 func StateDir() string {
 	return filepath.Join(base("XDG_STATE_HOME", filepath.Join(".local", "state")), "ccm")
 }
-func PanesDir() string  { return filepath.Join(CacheDir(), "panes") }
-func TitlesDir() string { return filepath.Join(CacheDir(), "titles") }
-func LogPath() string   { return filepath.Join(CacheDir(), "log") }
-func OrderPath() string { return filepath.Join(StateDir(), "order.json") }
+func PanesDir() string   { return filepath.Join(CacheDir(), "panes") }
+func TitlesDir() string  { return filepath.Join(CacheDir(), "titles") }
+func LogPath() string    { return filepath.Join(CacheDir(), "log") }
+func OrderPath() string  { return filepath.Join(StateDir(), "order.json") }
+func ClosedPath() string { return filepath.Join(StateDir(), "closed.json") }

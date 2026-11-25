@@ -22,7 +22,7 @@ Con varias sesiones de Claude Code en paralelo, repartidas en sesiones y windows
    3 ⠼  :1 ccmcli                    Rediseñar el header
  ────────────────────────────────────────────
  arreglá el login · terminó · hace 12m
-  j/k mover  ⏎ ir  / filtrar  r renombrar  dr renombrar de cero  s status  ds borrar status  dd ocultar  p pegar  U restaurar  q salir
+  j/k mover  ⏎ ir  / filtrar  r renombrar  dr renombrar de cero  s status  ds borrar status  dd ocultar  p pegar  U restaurar  c cerradas  q salir
 ```
 
 Agrupa por sesión de tmux. Cada fila tiene número, estado, window (`:2`, más la carpeta si difiere de la sesión, o el nombre que le pongas con `r`), status (texto libre puesto con `s`; la columna aparece solo si alguna entrada tiene) y título. Abajo va el último prompt de la sesión seleccionada.
@@ -54,6 +54,7 @@ Al lado del estado, un `◉` azul que respira marca las sesiones con remote-cont
 | `dd` | ocultar la entrada (queda en el registro) |
 | `p` / `P` | pegarla debajo / arriba: así reordenás |
 | `U` | volver a mostrar todas las ocultas |
+| `c` | ver las sesiones cerradas; escribí para buscar (fuzzy), `Enter` la retoma en una window nueva, `Esc` vuelve |
 | `q` / `Esc` | cerrar |
 
 El orden, las ocultas y los nombres se guardan entre aperturas.
@@ -63,6 +64,7 @@ El orden, las ocultas y los nombres se guardan entre aperturas.
 - **Estado:** los hooks de Claude Code llaman a `ccm hook <evento>`, que escribe un JSON por pane en `~/.cache/ccm/panes/`. Tarda unos 6 ms, nunca escribe a stdout y siempre sale con 0.
 - **Visto:** hooks de tmux llaman a `ccm seen` al cambiar de window o sesión, y lo que estás mirando pasa de `✔` a `○`.
 - **Lista:** `tmux list-panes` filtrado por los panes que corren `claude`, cruzado con esos JSON.
+- **Cerradas:** `ccm hook end` y la limpieza de panes muertos las anotan en `~/.local/state/ccm/closed.json` (últimas 50, solo las que tuvieron algún prompt). Retomar abre una window en la sesión de tmux donde estaba (o en la actual si ya no existe) y corre `claude --resume <id>`; al arrancar, la sesión sale de la lista.
 - **Títulos:** del transcript de cada sesión, con lectura incremental.
 - **Orden, nombres y status:** `~/.local/state/ccm/order.json`. Respeta `XDG_CACHE_HOME` y `XDG_STATE_HOME`.
 

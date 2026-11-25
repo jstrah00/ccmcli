@@ -9,10 +9,11 @@ func TestDirsRespectXDG(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", "/c")
 	t.Setenv("XDG_STATE_HOME", "/s")
 	checks := map[string]string{
-		PanesDir():  "/c/ccm/panes",
-		TitlesDir(): "/c/ccm/titles",
-		LogPath():   "/c/ccm/log",
-		OrderPath(): "/s/ccm/order.json",
+		PanesDir():   "/c/ccm/panes",
+		TitlesDir():  "/c/ccm/titles",
+		LogPath():    "/c/ccm/log",
+		OrderPath():  "/s/ccm/order.json",
+		ClosedPath(): "/s/ccm/closed.json",
 	}
 	for got, want := range checks {
 		if got != want {

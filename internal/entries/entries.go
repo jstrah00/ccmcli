@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"time"
 
+	"ccm/internal/closed"
 	"ccm/internal/order"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
@@ -91,13 +92,18 @@ func Arrange(all []Entry, keys []string) []Entry {
 	return out
 }
 
-func Purge(s state.Store, panes []tmux.PaneInfo, states map[string]state.Pane) {
+// Purge borra el estado de los panes que ya no existen y los anota como
+// cerradas: un pane matado no siempre llega a correr el hook end.
+func Purge(s state.Store, c closed.Store, panes []tmux.PaneInfo, states map[string]state.Pane, now time.Time) {
 	alive := make(map[string]bool, len(panes))
 	for _, p := range panes {
 		alive[p.PaneID] = true
 	}
 	for id := range states {
 		if !alive[id] {
+			if c.Path != "" {
+				_ = c.Add(closed.FromPane(states[id], now))
+			}
 			_ = s.Delete(id)
 		}
 	}

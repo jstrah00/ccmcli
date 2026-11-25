@@ -3,10 +3,13 @@ package hook
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"ccm/internal/closed"
+	"ccm/internal/order"
 	"ccm/internal/proc"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
@@ -260,5 +263,95 @@ func TestSeenMarksDoneInActiveAttachedWindows(t *testing.T) {
 		if p.State != w {
 			t.Errorf("%s = %q, want %q", id, p.State, w)
 		}
+	}
+}
+
+var loc = tmux.PaneInfo{PaneID: "%5", Session: "work", Window: 2, Pane: 1, Path: "/home/u/proj"}
+
+func depsClosed(t *testing.T) Deps {
+	d := deps(t, false)
+	d.Closed = closed.Store{Path: filepath.Join(t.TempDir(), "closed.json")}
+	d.PaneLoc = func(string) (tmux.PaneInfo, error) { return loc, nil }
+	d.Labels = func(key string) (string, string) {
+		if key == order.Key("work", 2, 1, "/home/u/proj") {
+			return "mi alias", "en review"
+		}
+		return "", ""
+	}
+	return d
+}
+
+func runAll(t *testing.T, d Deps, events ...string) {
+	t.Helper()
+	for _, e := range events {
+		if err := Run(e, strings.NewReader(input), d); err != nil {
+			t.Fatalf("%s: %v", e, err)
+		}
+	}
+}
+
+func TestEndRecordsClosed(t *testing.T) {
+	d := depsClosed(t)
+	runAll(t, d, "start", "prompt", "end")
+	l := d.Closed.List()
+	if len(l) != 1 {
+		t.Fatalf("cerradas = %+v", l)
+	}
+	want := closed.Session{
+		SessionID: "s1", Cwd: "/home/u/proj", TranscriptPath: "/t/s1.jsonl",
+		TmuxSession: "work", Alias: "mi alias", Status: "en review",
+		LastPrompt: "hola", ClosedAt: t0,
+	}
+	if l[0] != want {
+		t.Fatalf("got  %+v\nwant %+v", l[0], want)
+	}
+	if _, err := d.Store.Load(d.PaneID); err == nil {
+		t.Fatal("el pane sigue en el store")
+	}
+}
+
+func TestEndWithoutPromptNotRecorded(t *testing.T) {
+	d := depsClosed(t)
+	runAll(t, d, "start", "end")
+	if l := d.Closed.List(); len(l) != 0 {
+		t.Fatalf("cerradas = %+v", l)
+	}
+}
+
+func TestEndPaneLocFails(t *testing.T) {
+	d := depsClosed(t)
+	runAll(t, d, "start", "prompt")
+	d.PaneLoc = func(string) (tmux.PaneInfo, error) { return tmux.PaneInfo{}, errors.New("pane muerto") }
+	runAll(t, d, "end")
+	l := d.Closed.List()
+	if len(l) != 1 || l[0].TmuxSession != "work" || l[0].Alias != "" {
+		t.Fatalf("cerradas = %+v", l)
+	}
+}
+
+func TestStartStoresTmuxSession(t *testing.T) {
+	d := depsClosed(t)
+	runAll(t, d, "start")
+	if got := load(t, d).TmuxSession; got != "work" {
+		t.Fatalf("TmuxSession = %q", got)
+	}
+}
+
+func TestResumeThenCloseKeepsEntry(t *testing.T) {
+	d := depsClosed(t)
+	if err := d.Closed.Add(closed.Session{SessionID: "s1", LastPrompt: "viejo", ClosedAt: t0}); err != nil {
+		t.Fatal(err)
+	}
+	runAll(t, d, "start")
+	if l := d.Closed.List(); len(l) != 0 {
+		t.Fatalf("start no la sacó: %+v", l)
+	}
+	if got := load(t, d).LastPrompt; got != "viejo" {
+		t.Fatalf("LastPrompt = %q", got)
+	}
+	runAll(t, d, "end")
+	l := d.Closed.List()
+	if len(l) != 1 || l[0].SessionID != "s1" || l[0].LastPrompt != "viejo" {
+		t.Fatalf("cerradas = %+v", l)
 	}
 }

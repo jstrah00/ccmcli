@@ -82,4 +82,31 @@ func TestExecAgainstRealServer(t *testing.T) {
 	if active {
 		t.Fatal("sin cliente attached no debería contar como activa")
 	}
+
+	if !e.HasSession("prueba x") || e.HasSession("prueba") {
+		t.Fatal("HasSession tiene que matchear el nombre exacto")
+	}
+	dir := t.TempDir()
+	w, err := e.NewWindow("prueba x", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w.Session != "prueba x" || w.Window == ps[0].Window || w.PaneID == ps[0].PaneID {
+		t.Fatalf("NewWindow = %+v", w)
+	}
+	loc, err := e.PaneLoc(w.PaneID)
+	if err != nil || loc.Session != "prueba x" || loc.Window != w.Window {
+		t.Fatalf("PaneLoc = %+v, %v", loc, err)
+	}
+	if err := e.SendLine(w.PaneID, "echo hola"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewWindowArgs(t *testing.T) {
+	got := newWindowArgs("work", "/p")
+	want := []string{"new-window", "-d", "-P", "-F", listFormat, "-t", "=work:", "-c", "/p"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v", got)
+	}
 }

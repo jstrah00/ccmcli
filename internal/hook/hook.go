@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"ccm/internal/closed"
+	"ccm/internal/order"
 	"ccm/internal/proc"
 	"ccm/internal/state"
 	"ccm/internal/tmux"
@@ -29,6 +31,11 @@ type Deps struct {
 	PaneActive func(paneID string) (bool, error)
 	// BgHost se usa cuando falta PaneID: el hook corre en el daemon.
 	BgHost func() (proc.BgHost, bool)
+	// Registro de cerradas; con Path vacío no se usa. PaneLoc y Labels son
+	// opcionales.
+	Closed  closed.Store
+	PaneLoc func(paneID string) (tmux.PaneInfo, error)
+	Labels  func(key string) (alias, status string)
 }
 
 var ErrUnknownEvent = errors.New("evento desconocido")
@@ -49,7 +56,11 @@ func Run(event string, stdin io.Reader, d Deps) error {
 	var target state.State
 	switch event {
 	case "end":
-		return d.Store.Delete(d.PaneID)
+		err := recordClosed(d)
+		if derr := d.Store.Delete(d.PaneID); derr != nil {
+			return derr
+		}
+		return err
 	case "start":
 		target = state.Idle
 	case "prompt":
@@ -91,10 +102,44 @@ func Run(event string, stdin io.Reader, d Deps) error {
 	if host != "" {
 		p.PtyHost = host
 	}
+	if event == "start" {
+		if d.PaneLoc != nil {
+			if l, err := d.PaneLoc(d.PaneID); err == nil {
+				p.TmuxSession = l.Session
+			}
+		}
+		// Una sesión retomada sale de las cerradas. Hereda el último prompt
+		// para volver a la lista si se cierra sin escribirle nada.
+		if d.Closed.Path != "" {
+			if c, ok, _ := d.Closed.Take(in.SessionID); ok && p.LastPrompt == "" {
+				p.LastPrompt = c.LastPrompt
+			}
+		}
+	}
 	if event == "prompt" && in.Prompt != "" {
 		p.LastPrompt = oneLine(in.Prompt)
 	}
 	return d.Store.Save(state.Apply(p, target, d.Now()))
+}
+
+func recordClosed(d Deps) error {
+	if d.Closed.Path == "" {
+		return nil
+	}
+	p, err := d.Store.Load(d.PaneID)
+	if err != nil {
+		return nil // sin estado no hay sesión que registrar
+	}
+	c := closed.FromPane(p, d.Now())
+	if d.PaneLoc != nil {
+		if l, err := d.PaneLoc(d.PaneID); err == nil {
+			c.TmuxSession = l.Session
+			if d.Labels != nil {
+				c.Alias, c.Status = d.Labels(order.Key(l.Session, l.Window, l.Pane, l.Path))
+			}
+		}
+	}
+	return d.Closed.Add(c)
 }
 
 // resolveBg busca el pane de una sesión que pasó al daemon: primero por el

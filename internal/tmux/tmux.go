@@ -115,11 +115,61 @@ func (e Exec) PaneActive(paneID string) (bool, error) {
 	return len(f) == 2 && f[0] == "1" && f[1] != "0", nil
 }
 
+func (e Exec) PaneLoc(paneID string) (PaneInfo, error) {
+	out, err := e.run("display-message", "-p", "-t", paneID, listFormat)
+	if err != nil {
+		return PaneInfo{}, err
+	}
+	return one(out)
+}
+
+func one(out string) (PaneInfo, error) {
+	ps, err := ParsePanes(out)
+	if err != nil {
+		return PaneInfo{}, err
+	}
+	if len(ps) != 1 {
+		return PaneInfo{}, fmt.Errorf("esperaba un pane, llegaron %d", len(ps))
+	}
+	return ps[0], nil
+}
+
 // CurrentPane: sin -t, tmux resuelve el pane activo del cliente que abrió el
 // popup.
 func (e Exec) CurrentPane() (string, error) {
 	out, err := e.run("display-message", "-p", "#{pane_id}")
 	return strings.TrimSpace(out), err
+}
+
+func (e Exec) HasSession(name string) bool {
+	_, err := e.run("has-session", "-t", "="+name)
+	return err == nil
+}
+
+func (e Exec) CurrentSession() (string, error) {
+	out, err := e.run("display-message", "-p", "#{session_name}")
+	return strings.TrimRight(out, "\n"), err
+}
+
+// "=sesión:" sin índice: tmux usa el próximo libre.
+func newWindowArgs(session, cwd string) []string {
+	return []string{"new-window", "-d", "-P", "-F", listFormat, "-t", "=" + session + ":", "-c", cwd}
+}
+
+func (e Exec) NewWindow(session, cwd string) (PaneInfo, error) {
+	out, err := e.run(newWindowArgs(session, cwd)...)
+	if err != nil {
+		return PaneInfo{}, err
+	}
+	return one(out)
+}
+
+func (e Exec) SendLine(paneID, line string) error {
+	if _, err := e.run("send-keys", "-t", paneID, "-l", line); err != nil {
+		return err
+	}
+	_, err := e.run("send-keys", "-t", paneID, "Enter")
+	return err
 }
 
 func switchArgs(p PaneInfo) [][]string {
