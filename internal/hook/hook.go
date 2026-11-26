@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/notify"
 	"github.com/jstrah00/ccmcli/internal/order"
 	"github.com/jstrah00/ccmcli/internal/proc"
 	"github.com/jstrah00/ccmcli/internal/state"
@@ -22,6 +24,16 @@ type Input struct {
 	TranscriptPath string `json:"transcript_path"`
 	Cwd            string `json:"cwd"`
 	Prompt         string `json:"prompt"`
+	// Stop
+	LastAssistantMessage string `json:"last_assistant_message"`
+	// Notification
+	Message string `json:"message"`
+	// PreToolUse de AskUserQuestion
+	ToolInput struct {
+		Questions []struct {
+			Question string `json:"question"`
+		} `json:"questions"`
+	} `json:"tool_input"`
 }
 
 type Deps struct {
@@ -36,6 +48,9 @@ type Deps struct {
 	Closed  closed.Store
 	PaneLoc func(paneID string) (tmux.PaneInfo, error)
 	Labels  func(key string) (alias, status string)
+	// Notify recibe los avisos a mandar; nil desactiva los avisos.
+	Notify  func(notify.Request)
+	MinTurn time.Duration
 }
 
 var ErrUnknownEvent = errors.New("unknown event")
@@ -117,9 +132,57 @@ func Run(event string, stdin io.Reader, d Deps) error {
 		}
 	}
 	if event == "prompt" && in.Prompt != "" {
-		p.LastPrompt = oneLine(in.Prompt)
+		p.LastPrompt = oneLine(in.Prompt, maxPrompt)
 	}
-	return d.Store.Save(state.Apply(p, target, d.Now()))
+	if event == "prompt" {
+		p.TurnStart = d.Now().UTC()
+	}
+	p = state.Apply(p, target, d.Now())
+	if err := d.Store.Save(p); err != nil {
+		return err
+	}
+	maybeNotify(d, event, in, p)
+	return nil
+}
+
+// maxBody: runas del cuerpo del aviso; más no entra en un banner.
+const maxBody = 110
+
+func maybeNotify(d Deps, event string, in Input, p state.Pane) {
+	if d.Notify == nil {
+		return
+	}
+	r := notify.Request{PaneID: d.PaneID, SessionID: p.SessionID}
+	switch event {
+	case "permission", "ask":
+		if active, err := d.PaneActive(d.PaneID); err == nil && active {
+			return
+		}
+		r.Kind, r.Body = notify.Input, in.Message
+		if event == "ask" && len(in.ToolInput.Questions) > 0 {
+			r.Body = in.ToolInput.Questions[0].Question
+		}
+	case "stop":
+		if p.State != state.Done {
+			return
+		}
+		if !p.TurnStart.IsZero() && d.Now().Sub(p.TurnStart) < d.MinTurn {
+			return
+		}
+		r.Kind, r.Body = notify.Finished, in.LastAssistantMessage
+	default:
+		return
+	}
+	r.Body = oneLine(r.Body, maxBody)
+	if p.Cwd != "" {
+		r.Folder = filepath.Base(p.Cwd)
+	}
+	if d.PaneLoc != nil {
+		if l, err := d.PaneLoc(d.PaneID); err == nil {
+			r.Session, r.Window = l.Session, l.Window
+		}
+	}
+	d.Notify(r)
 }
 
 func recordClosed(d Deps) error {
@@ -177,12 +240,12 @@ func resolveBg(d Deps) (paneID, host string) {
 // de detalle en cualquier popup.
 const maxPrompt = 300
 
-// oneLine colapsa saltos de línea, tabs y espacios repetidos (el prompt se
-// muestra en una sola línea) y lo recorta a maxPrompt runas.
-func oneLine(s string) string {
+// oneLine colapsa saltos de línea, tabs y espacios repetidos (se muestra en
+// una sola línea) y lo recorta a max runas.
+func oneLine(s string, max int) string {
 	s = strings.Join(strings.Fields(s), " ")
-	if r := []rune(s); len(r) > maxPrompt {
-		s = string(r[:maxPrompt])
+	if r := []rune(s); len(r) > max {
+		s = string(r[:max])
 	}
 	return s
 }
