@@ -77,9 +77,21 @@ func write(p string, b []byte, like string) error {
 	return os.Chmod(p, mode)
 }
 
+// backup guarda el archivo como estaba antes de la primera instalación: si
+// ya hay uno, es el original y no se pisa en upgrades.
+func backup(p string, b []byte) error {
+	if exists(p + ".bak-ccm") {
+		return nil
+	}
+	return write(p+".bak-ccm", b, p)
+}
+
 func Run(o Options, out io.Writer) error {
 	if !ValidKey(o.Key) {
 		return fmt.Errorf("invalid tmux key %q", o.Key)
+	}
+	if !SafeBin(o.Bin) {
+		return fmt.Errorf("can't use %q: move ccm to a path without quotes, $, #, %%, ` or backslashes", o.Bin)
 	}
 	if strings.Contains(o.Bin, "go-build") {
 		return fmt.Errorf("%s is a temporary `go run` binary: install ccm with `go install github.com/jstrah00/ccmcli/cmd/ccm@latest` and run that one", o.Bin)
@@ -102,7 +114,7 @@ func Run(o Options, out io.Writer) error {
 	} else {
 		if !o.DryRun {
 			if existed {
-				if err := write(o.Settings+".bak-ccm", settings, o.Settings); err != nil {
+				if err := backup(o.Settings, settings); err != nil {
 					return err
 				}
 			}
@@ -115,20 +127,28 @@ func Run(o Options, out io.Writer) error {
 			fmt.Fprintf(out, "    %-17s %s\n", e.Name, Command(o.Bin, e.Arg))
 		}
 		if existed && !o.DryRun {
-			fmt.Fprintf(out, "    backup: %s.bak-ccm\n", o.Settings)
+			fmt.Fprintf(out, "    backup of the file before ccm: %s.bak-ccm\n", o.Settings)
 		}
 	}
 
-	conf, _, err := readOptional(o.TmuxConf)
+	conf, confExisted, err := readOptional(o.TmuxConf)
 	if err != nil {
 		return err
 	}
 	block := TmuxBlock(o.Bin, o.Key)
-	newConf, tchanged := MergeTmux(string(conf), block)
+	newConf, tchanged, err := MergeTmux(string(conf), block)
+	if err != nil {
+		return fmt.Errorf("%s: %w", o.TmuxConf, err)
+	}
 	if !tchanged {
 		fmt.Fprintf(out, "· tmux already set up in %s (%s opens ccm)\n", o.TmuxConf, o.Key)
 	} else {
 		if !o.DryRun {
+			if confExisted {
+				if err := backup(o.TmuxConf, conf); err != nil {
+					return err
+				}
+			}
 			if err := write(o.TmuxConf, []byte(newConf), o.TmuxConf); err != nil {
 				return err
 			}

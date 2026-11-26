@@ -51,6 +51,7 @@ type Deps struct {
 	// Notify recibe los avisos a mandar; nil desactiva los avisos.
 	Notify  func(notify.Request)
 	MinTurn time.Duration
+	Socket  string // socket del server de tmux, para el click del aviso
 }
 
 var ErrUnknownEvent = errors.New("unknown event")
@@ -152,7 +153,7 @@ func maybeNotify(d Deps, event string, in Input, p state.Pane) {
 	if d.Notify == nil {
 		return
 	}
-	r := notify.Request{PaneID: d.PaneID, SessionID: p.SessionID}
+	r := notify.Request{PaneID: d.PaneID, SessionID: p.SessionID, Socket: d.Socket}
 	switch event {
 	case "permission", "ask":
 		if active, err := d.PaneActive(d.PaneID); err == nil && active {

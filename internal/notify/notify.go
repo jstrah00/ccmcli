@@ -87,9 +87,29 @@ func MacArgs(r Request, bundle, tmuxBin string) []string {
 		a = append(a, "-activate", bundle)
 	}
 	if tmuxBin != "" && paneID.MatchString(r.PaneID) {
-		a = append(a, "-execute", fmt.Sprintf("'%s' switch-client -t '%s'", tmuxBin, r.PaneID))
+		cmd := shq(tmuxBin)
+		if r.Socket != "" {
+			cmd += " -S " + shq(r.Socket)
+		}
+		a = append(a, "-execute", cmd+" switch-client -t "+shq(r.PaneID))
 	}
 	return a
+}
+
+func shq(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
+
+// SocketFromTMUX saca el socket de $TMUX ("socket,pid,session").
+func SocketFromTMUX(v string) string {
+	s, _, _ := strings.Cut(v, ",")
+	return s
+}
+
+func SwitchArgs(r Request) []string {
+	a := []string{}
+	if r.Socket != "" {
+		a = append(a, "-S", r.Socket)
+	}
+	return append(a, "switch-client", "-t", r.PaneID)
 }
 
 // OsaArgs pasa los textos por argv para no interpolarlos en el AppleScript.
@@ -103,7 +123,12 @@ func OsaArgs(r Request) []string {
 }
 
 func LinuxArgs(r Request) []string {
-	return []string{"--app-name=ccm", "--action=go=Go to session", "--wait", Title(r) + " · " + Subtitle(r.Kind), body(r)}
+	return append([]string{"--action=go=Go to session", "--wait"}, LinuxArgsPlain(r)...)
+}
+
+// LinuxArgsPlain: libnotify < 0.7.9 no tiene --action ni --wait.
+func LinuxArgsPlain(r Request) []string {
+	return []string{"--app-name=ccm", Title(r) + " · " + Subtitle(r.Kind), body(r)}
 }
 
 // Find busca name en PATH y después en extra: los hooks y terminal-notifier
@@ -152,10 +177,10 @@ func Send(r Request, cfg config.Notify) error {
 		}
 		out, err := exec.Command(ns, LinuxArgs(r)...).Output()
 		if err != nil {
-			return err
+			return exec.Command(ns, LinuxArgsPlain(r)...).Run()
 		}
 		if strings.TrimSpace(string(out)) == "go" && tmuxBin != "" && paneID.MatchString(r.PaneID) {
-			return exec.Command(tmuxBin, "switch-client", "-t", r.PaneID).Run()
+			return exec.Command(tmuxBin, SwitchArgs(r)...).Run()
 		}
 	}
 	return nil

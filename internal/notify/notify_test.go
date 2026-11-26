@@ -124,3 +124,37 @@ func TestLinuxArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestMacArgsSocketAndQuoting(t *testing.T) {
+	r := req
+	r.Socket = "/tmp/tmux-501/my sock"
+	got, _ := arg(MacArgs(r, "", "/opt/it's/tmux"), "-execute")
+	want := `'/opt/it'\''s/tmux' -S '/tmp/tmux-501/my sock' switch-client -t '%5'`
+	if got != want {
+		t.Fatalf("got  %s\nwant %s", got, want)
+	}
+}
+
+func TestSocketFromTMUX(t *testing.T) {
+	if s := SocketFromTMUX("/private/tmp/tmux-501/default,1234,0"); s != "/private/tmp/tmux-501/default" {
+		t.Fatalf("got %q", s)
+	}
+	if s := SocketFromTMUX(""); s != "" {
+		t.Fatalf("got %q", s)
+	}
+}
+
+func TestSwitchArgs(t *testing.T) {
+	r := req
+	r.Socket = "/s"
+	if a := SwitchArgs(r); !slices.Equal(a, []string{"-S", "/s", "switch-client", "-t", "%5"}) {
+		t.Fatalf("got %q", a)
+	}
+}
+
+func TestLinuxArgsPlain(t *testing.T) {
+	a := LinuxArgsPlain(req)
+	if slices.Contains(a, "--wait") || slices.ContainsFunc(a, func(s string) bool { return strings.HasPrefix(s, "--action") }) {
+		t.Fatalf("got %q", a)
+	}
+}

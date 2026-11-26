@@ -16,4 +16,6 @@ type Request struct {
 	Window    int    `json:"window"`
 	Folder    string `json:"folder"`
 	Body      string `json:"body"`
+	// Socket del server de tmux: el click corre fuera de tmux, sin $TMUX.
+	Socket string `json:"socket,omitempty"`
 }

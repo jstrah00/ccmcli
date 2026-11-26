@@ -58,11 +58,18 @@ func decodeValue(dec *json.Decoder) (any, error) {
 		switch t {
 		case '{':
 			o := obj{}
+			seen := map[string]bool{}
 			for dec.More() {
 				kt, err := dec.Token()
 				if err != nil {
 					return nil, err
 				}
+				// Con claves repetidas Claude Code usa la última y get la
+				// primera: los hooks quedarían en la que se ignora.
+				if seen[kt.(string)] {
+					return nil, fmt.Errorf("duplicate key %q", kt)
+				}
+				seen[kt.(string)] = true
 				v, err := decodeValue(dec)
 				if err != nil {
 					return nil, err

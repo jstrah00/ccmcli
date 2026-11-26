@@ -34,14 +34,14 @@ func SettingsPath() string {
 	return filepath.Join(home, ".claude", "settings.json")
 }
 
-func shellQuote(s string) string {
+func ShellQuote(s string) string {
 	if !strings.ContainsAny(s, " \t'\"$`\\") {
 		return s
 	}
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
-func Command(bin, arg string) string { return shellQuote(bin) + " hook " + arg }
+func Command(bin, arg string) string { return ShellQuote(bin) + " hook " + arg }
 
 func isCCM(cmd, arg string) bool {
 	return regexp.MustCompile(`(^|[\s/'"])ccm['"]?\s+hook\s+` + regexp.QuoteMeta(arg) + `\s*$`).MatchString(cmd)
@@ -112,6 +112,7 @@ func mergeEvent(groups []any, ev Event, cmd string) []any {
 		matcher, _ := grp.get("matcher")
 		m, _ := matcher.(string)
 		kept := []any{}
+		removed := false
 		for _, h := range hs {
 			ho, _ := h.(obj)
 			c, _ := ho.get("command")
@@ -121,11 +122,12 @@ func mergeEvent(groups []any, ev Event, cmd string) []any {
 				found = true
 				kept = append(kept, h)
 			case isCCM(cs, ev.Arg):
+				removed = true
 			default:
 				kept = append(kept, h)
 			}
 		}
-		if len(kept) == 0 {
+		if len(kept) == 0 && removed {
 			continue
 		}
 		grp.set("hooks", kept)

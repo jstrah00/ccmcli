@@ -30,6 +30,8 @@ The binary lands in `$(go env GOBIN)` or, if that's empty, `$(go env GOPATH)/bin
 
 ## 3. Hooks and the `C-g` shortcut
 
+The default shortcut is `C-g` (Ctrl+g, no tmux prefix). Bound in tmux's root table, it takes Ctrl+g away from programs in the pane, including Claude Code's own Ctrl+g (edit the prompt in an external editor). Mention this to the user in one line; keep `C-g` unless they want another key.
+
 Check whether `C-g` is already taken: `tmux list-keys -T root C-g 2>/dev/null` and `grep -n 'C-g' ~/.config/tmux/tmux.conf ~/.tmux.conf 2>/dev/null`. If it's bound to something other than ccm, tell the user and ask which key they want instead (pass it with `--key`, e.g. `--key M-g`). Otherwise use the default `C-g`.
 
 Preview, show the output to the user, then apply:
@@ -42,7 +44,8 @@ Preview, show the output to the user, then apply:
 `ccm setup`:
 - adds 8 hooks to `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR/settings.json`) pointing at this binary, keeps every other hook and setting, and saves a backup as `settings.json.bak-ccm`;
 - adds a block between `# >>> ccm >>>` and `# <<< ccm <<<` to `~/.config/tmux/tmux.conf` (or `~/.tmux.conf`) that binds `C-g` (without the tmux prefix) to the popup and marks sessions as seen when you switch windows; it reloads tmux if it's running;
-- is safe to run again (after updating ccm, too).
+- is safe to run again (after updating ccm, too); the first `.bak-ccm` backup of each file is kept;
+- stops without writing if the `# >>> ccm >>>` / `# <<< ccm <<<` markers were edited and broken: show the user the error and fix the markers with them.
 
 If it reports ccm lines outside the block (from an older manual install), offer to remove those lines.
 

@@ -40,22 +40,34 @@ func ValidKey(k string) bool { return keyRe.MatchString(k) }
 
 // TmuxBlock usa el índice 42 en los hooks de tmux: con -g a secas pisaría
 // los hooks que el usuario ya tenga en esos eventos, y con -a se duplicaría
-// en cada source-file.
+// en cada source-file. bin va entre comillas de shell dentro de comillas
+// dobles de tmux; Run rechaza las rutas que romperían alguna de las dos.
 func TmuxBlock(bin, key string) string {
+	q := ShellQuote(bin)
 	return fmt.Sprintf(`%s
 bind-key -n %s display-popup -E -h "60%%" -w "80%%" "%s"
-set-hook -g session-window-changed[42] 'run-shell -b "%s seen"'
-set-hook -g client-session-changed[42] 'run-shell -b "%s seen"'
+set-hook -g session-window-changed[42] "run-shell -b \"%s seen\""
+set-hook -g client-session-changed[42] "run-shell -b \"%s seen\""
 %s
-`, BlockStart, key, bin, bin, bin, blockEnd)
+`, BlockStart, key, q, q, q, blockEnd)
 }
 
+var unsafeBin = regexp.MustCompile("[\"'$#\\\\`%\n]")
+
+// SafeBin: la ruta del binario va dentro de comillas de tmux y de shell.
+func SafeBin(bin string) bool { return !unsafeBin.MatchString(bin) }
+
 // MergeTmux agrega el bloque de ccm al final, o reemplaza el que ya esté.
-func MergeTmux(conf, block string) (string, bool) {
-	i := strings.Index(conf, BlockStart)
-	j := strings.Index(conf, blockEnd)
+// Con marcadores rotos (editados a mano) no toca nada: adivinar dónde termina
+// el bloque puede borrar config del usuario.
+func MergeTmux(conf, block string) (string, bool, error) {
+	ns, ne := strings.Count(conf, BlockStart), strings.Count(conf, blockEnd)
+	i, j := strings.Index(conf, BlockStart), strings.Index(conf, blockEnd)
+	if ns > 1 || ne > 1 || ns != ne || (ns == 1 && j < i) {
+		return "", false, fmt.Errorf("the %q / %q markers are broken: fix them by hand (keep exactly one of each, in order) or remove both", BlockStart, blockEnd)
+	}
 	var out string
-	if i >= 0 && j > i {
+	if ns == 1 {
 		end := j + len(blockEnd)
 		if end < len(conf) && conf[end] == '\n' {
 			end++
@@ -71,5 +83,5 @@ func MergeTmux(conf, block string) (string, bool) {
 		}
 		out += block
 	}
-	return out, out != conf
+	return out, out != conf, nil
 }

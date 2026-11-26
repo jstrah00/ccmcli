@@ -119,6 +119,7 @@ func runHook(event string, stdin io.Reader) {
 	}
 	if cfg.Notify.Banner || cfg.Notify.Sound {
 		d.Notify = spawnNotify
+		d.Socket = notify.SocketFromTMUX(os.Getenv("TMUX"))
 		d.MinTurn = time.Duration(cfg.Notify.MinTurnSeconds) * time.Second
 	}
 	if err := hook.Run(event, stdin, d); err != nil {
@@ -180,11 +181,9 @@ func runNotify(args []string, stdin io.Reader, stderr io.Writer) int {
 }
 
 func self() (string, error) {
-	p, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	return filepath.EvalSymlinks(p)
+	// Sin resolver symlinks: si ccm está linkeado (stow, brew), los hooks
+	// deben apuntar al link, que sobrevive a los upgrades.
+	return os.Executable()
 }
 
 func runSetup(args []string, stdout, stderr io.Writer) int {

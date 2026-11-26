@@ -112,7 +112,7 @@ func hooks(e Env) Check {
 
 func tmuxConf(e Env) Check {
 	name := "tmux config"
-	if !strings.Contains(e.TmuxConf, setup.BlockStart) || !strings.Contains(e.TmuxConf, `"`+e.Bin+`"`) {
+	if !strings.Contains(e.TmuxConf, setup.BlockStart) || !strings.Contains(e.TmuxConf, `"`+setup.ShellQuote(e.Bin)+`"`) {
 		return Check{Name: name, Status: Fail, Fix: "ccm block missing or pointing to another binary in " + e.TmuxConfPath + ": run `ccm setup`"}
 	}
 	if s := setup.StrayLines(e.TmuxConf); len(s) > 0 {

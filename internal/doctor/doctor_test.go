@@ -116,3 +116,12 @@ func TestConfigError(t *testing.T) {
 		t.Fatalf("%+v", c)
 	}
 }
+
+func TestTmuxBlockWithSpaces(t *testing.T) {
+	e := good(t)
+	e.Bin = "/Users/John Smith/go/bin/ccm"
+	e.TmuxConf = setup.TmuxBlock(e.Bin, "C-g")
+	if c := find(Run(e), "tmux config"); c.Status != OK {
+		t.Fatalf("%+v", c)
+	}
+}

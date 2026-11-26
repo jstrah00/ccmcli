@@ -25,7 +25,7 @@ When you run several Claude Code sessions in parallel, spread across tmux sessio
 - **Closed sessions** with fuzzy search: press `Enter` to resume one where it was, with its name and status.
 - **Notifications** when a session needs input or finishes a long turn; click one to jump to its pane (macOS and Linux).
 - **Remote-control** sessions marked with a breathing `◉`.
-- **Cheap:** the hook takes 3–7 ms, never writes to stdout and never breaks Claude Code.
+- **Cheap:** the hook takes a few milliseconds (3–7 ms, ~13 ms when it starts a notification), never writes to stdout and never breaks Claude Code.
 
 Rows are grouped by tmux session. Each row shows a number, the state, the window (`:2`, plus the folder if it differs from the session name, or the name you give it with `r`), a status note (free text set with `s`; the column only shows up if some entry has one) and the conversation title. The bottom line shows the last prompt of the selected session.
 
@@ -104,27 +104,29 @@ Then restart your open Claude Code sessions (hooks load when a session starts) a
   ```tmux
   # >>> ccm >>>
   bind-key -n C-g display-popup -E -h "60%" -w "80%" "/Users/you/go/bin/ccm"
-  set-hook -g session-window-changed[42] 'run-shell -b "/Users/you/go/bin/ccm seen"'
-  set-hook -g client-session-changed[42] 'run-shell -b "/Users/you/go/bin/ccm seen"'
+  set-hook -g session-window-changed[42] "run-shell -b \"/Users/you/go/bin/ccm seen\""
+  set-hook -g client-session-changed[42] "run-shell -b \"/Users/you/go/bin/ccm seen\""
   # <<< ccm <<<
   ```
 
-  `Ctrl+g` works without the tmux prefix. To use another key: `ccm setup --key M-g`. Other flags: `--settings PATH`, `--tmux-conf PATH`.
+  `Ctrl+g` works without the tmux prefix. Since tmux grabs it first, it no longer reaches the program in the pane: Claude Code's own `Ctrl+g` (edit the prompt in your editor) and the shell's `Ctrl+g` stop working. If you use those, pick another key: `ccm setup --key M-g`. Other flags: `--settings PATH`, `--tmux-conf PATH`.
+
+  The hooks use index `[42]`, so hooks you already have on those tmux events stay. The first time it writes each file, setup saves a copy as `.bak-ccm`; later runs keep that original copy. If you edited the `# >>> ccm >>>` markers by hand and broke them, setup stops without touching anything.
 
 <details>
 <summary>What the hooks look like in <code>settings.json</code></summary>
 
 ```json
-"SessionStart":     [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook start"}]}],
-"UserPromptSubmit": [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook prompt"}]}],
-"PreToolUse":       [{"matcher": "AskUserQuestion", "hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook ask"}]}],
-"PostToolUse":      [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook tool-done"}]}],
+"SessionStart":     [{"hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook start"}]}],
+"UserPromptSubmit": [{"hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook prompt"}]}],
+"PreToolUse":       [{"matcher": "AskUserQuestion", "hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook ask"}]}],
+"PostToolUse":      [{"hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook tool-done"}]}],
 "Notification": [
-  {"matcher": "permission_prompt", "hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook permission"}]},
-  {"matcher": "idle_prompt",       "hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook idle"}]}
+  {"matcher": "permission_prompt", "hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook permission"}]},
+  {"matcher": "idle_prompt",       "hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook idle"}]}
 ],
-"Stop":             [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook stop"}]}],
-"SessionEnd":       [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook end"}]}]
+"Stop":             [{"hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook stop"}]}],
+"SessionEnd":       [{"hooks": [{"type": "command", "timeout": 5, "command": "/Users/you/go/bin/ccm hook end"}]}]
 ```
 </details>
 

@@ -103,3 +103,12 @@ func TestBodyTruncated(t *testing.T) {
 		t.Fatalf("got %+v", *got)
 	}
 }
+
+func TestNotifyCarriesSocket(t *testing.T) {
+	d, got := notifyDeps(t, false)
+	d.Socket = "/tmp/tmux-501/default"
+	_ = Run("stop", strings.NewReader(input), d)
+	if len(*got) != 1 || (*got)[0].Socket != "/tmp/tmux-501/default" {
+		t.Fatalf("got %+v", *got)
+	}
+}

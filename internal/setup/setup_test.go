@@ -130,8 +130,8 @@ func TestTmuxBlock(t *testing.T) {
 	for _, want := range []string{
 		"# >>> ccm >>>", "# <<< ccm <<<",
 		`bind-key -n C-g display-popup -E -h "60%" -w "80%" "` + bin + `"`,
-		`set-hook -g session-window-changed[42] 'run-shell -b "` + bin + ` seen"'`,
-		`set-hook -g client-session-changed[42] 'run-shell -b "` + bin + ` seen"'`,
+		`set-hook -g session-window-changed[42] "run-shell -b \"` + bin + ` seen\""`,
+		`set-hook -g client-session-changed[42] "run-shell -b \"` + bin + ` seen\""`,
 	} {
 		if !strings.Contains(b, want) {
 			t.Fatalf("falta %q en:\n%s", want, b)
@@ -142,20 +142,20 @@ func TestTmuxBlock(t *testing.T) {
 func TestMergeTmux(t *testing.T) {
 	block := TmuxBlock(bin, "C-g")
 	conf := "set -g mouse on\n"
-	out, changed := MergeTmux(conf, block)
+	out, changed, _ := MergeTmux(conf, block)
 	if !changed || !strings.HasPrefix(out, conf) || !strings.Contains(out, block) {
 		t.Fatalf("append:\n%s", out)
 	}
-	if again, changed := MergeTmux(out, block); changed || again != out {
+	if again, changed, _ := MergeTmux(out, block); changed || again != out {
 		t.Fatal("no idempotente")
 	}
 	newBlock := TmuxBlock(bin, "M-c")
-	repl, changed := MergeTmux(out+"set -g x y\n", newBlock)
+	repl, changed, _ := MergeTmux(out+"set -g x y\n", newBlock)
 	if !changed || strings.Contains(repl, "C-g") || !strings.Contains(repl, "M-c") ||
 		!strings.HasSuffix(repl, "set -g x y\n") || strings.Count(repl, "# >>> ccm >>>") != 1 {
 		t.Fatalf("replace:\n%s", repl)
 	}
-	if out, _ := MergeTmux("", block); out != block {
+	if out, _, _ := MergeTmux("", block); out != block {
 		t.Fatalf("vacío:\n%q", out)
 	}
 }
@@ -258,5 +258,68 @@ func TestRunKeepsFileModes(t *testing.T) {
 		if fi, _ := os.Stat(p); fi.Mode().Perm() != 0o600 {
 			t.Fatalf("%s: %v", p, fi.Mode().Perm())
 		}
+	}
+}
+
+func TestMergeTmuxBrokenMarkersFails(t *testing.T) {
+	block := TmuxBlock(bin, "C-g")
+	for _, conf := range []string{
+		"A\n# >>> ccm >>>\nUSER_LINE\n",
+		"# <<< ccm <<<\nA\n# >>> ccm >>>\n",
+		block + block,
+	} {
+		if _, _, err := MergeTmux(conf, block); err == nil {
+			t.Fatalf("aceptó marcadores rotos:\n%s", conf)
+		}
+	}
+}
+
+func TestTmuxBlockQuotesBinWithSpaces(t *testing.T) {
+	b := TmuxBlock("/Users/John Smith/go/bin/ccm", "C-g")
+	for _, want := range []string{
+		`display-popup -E -h "60%" -w "80%" "'/Users/John Smith/go/bin/ccm'"`,
+		`set-hook -g session-window-changed[42] "run-shell -b \"'/Users/John Smith/go/bin/ccm' seen\""`,
+	} {
+		if !strings.Contains(b, want) {
+			t.Fatalf("falta %q en:\n%s", want, b)
+		}
+	}
+}
+
+func TestRunRejectsUnsafeBinPath(t *testing.T) {
+	for _, b := range []string{`/a"b/ccm`, `/a'b/ccm`, `/a$b/ccm`, "/a#b/ccm", `/a\b/ccm`} {
+		o := Options{Bin: b, Settings: t.TempDir() + "/s.json", TmuxConf: t.TempDir() + "/t", Key: "C-g"}
+		if err := Run(o, &strings.Builder{}); err == nil {
+			t.Fatalf("aceptó %q", b)
+		}
+	}
+}
+
+func TestMergeHooksDuplicateKeysFails(t *testing.T) {
+	if _, _, err := MergeHooks([]byte(`{"hooks":{},"hooks":{"Stop":[]}}`), bin); err == nil {
+		t.Fatal("aceptó claves duplicadas")
+	}
+}
+
+func TestMergeHooksKeepsUserEmptyGroup(t *testing.T) {
+	out, _, _ := MergeHooks([]byte(`{"hooks":{"Stop":[{"matcher":"x","hooks":[]}]}}`), bin)
+	if g := hooksOf(t, out)["Stop"]; len(g) != 2 || g[0].Matcher != "x" {
+		t.Fatalf("Stop = %+v", g)
+	}
+}
+
+func TestRunKeepsFirstBackup(t *testing.T) {
+	dir := t.TempDir()
+	o := Options{Bin: bin, Settings: dir + "/settings.json", TmuxConf: dir + "/tmux.conf", Key: "C-g"}
+	writeFile(t, o.Settings, `{"model":"original"}`)
+	writeFile(t, o.TmuxConf, "set -g mouse on\n")
+	_ = Run(o, &strings.Builder{})
+	o.Bin = "/new/ccm"
+	_ = Run(o, &strings.Builder{})
+	if b := readFile(t, o.Settings+".bak-ccm"); b != `{"model":"original"}` {
+		t.Fatalf("backup pisado: %q", b)
+	}
+	if b := readFile(t, o.TmuxConf+".bak-ccm"); b != "set -g mouse on\n" {
+		t.Fatalf("backup tmux: %q", b)
 	}
 }
