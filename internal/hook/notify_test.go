@@ -103,4 +103,3 @@ func TestBodyTruncated(t *testing.T) {
 		t.Fatalf("got %+v", *got)
 	}
 }
-

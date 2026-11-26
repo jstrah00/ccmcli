@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -52,4 +54,33 @@ func TestUnknownSubcommand(t *testing.T) {
 	if code := run([]string{"nope"}, strings.NewReader(""), &out, &errb); code != 2 {
 		t.Fatalf("code = %d", code)
 	}
+}
+
+func TestNotifyBadInputIsSilent(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := run([]string{"notify"}, strings.NewReader("{roto"), &out, &errb); code != 0 || out.Len() != 0 {
+		t.Fatalf("code=%d stdout=%q", code, out.String())
+	}
+}
+
+func TestUsageListsCommands(t *testing.T) {
+	var out, errb bytes.Buffer
+	run([]string{"nope"}, strings.NewReader(""), &out, &errb)
+	for _, c := range []string{"hook", "seen", "notify", "setup", "doctor"} {
+		if !strings.Contains(errb.String(), c) {
+			t.Fatalf("usage sin %q: %q", c, errb.String())
+		}
+	}
+}
+
+// Los tests corren el hook de verdad: sin esto, un stop lanzaría el binario de
+// test como "ccm notify".
+func TestMain(m *testing.M) {
+	dir, _ := os.MkdirTemp("", "ccm-test")
+	_ = os.MkdirAll(filepath.Join(dir, "ccm"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "ccm", "config.json"), []byte(`{"notify":{"banner":false,"sound":false}}`), 0o644)
+	os.Setenv("XDG_CONFIG_HOME", dir)
+	code := m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
 }

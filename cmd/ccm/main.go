@@ -3,20 +3,26 @@
 //	ccm               abre la TUI (pensado para display-popup)
 //	ccm hook <evento> lo llaman los hooks de Claude Code
 //	ccm seen          lo llaman los hooks de tmux al cambiar de window
+//	ccm notify        manda un aviso (lo lanza el hook; --test para probar)
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/config"
 	"github.com/jstrah00/ccmcli/internal/entries"
 	"github.com/jstrah00/ccmcli/internal/hook"
+	"github.com/jstrah00/ccmcli/internal/notify"
 	"github.com/jstrah00/ccmcli/internal/order"
 	"github.com/jstrah00/ccmcli/internal/paths"
 	"github.com/jstrah00/ccmcli/internal/proc"
@@ -46,8 +52,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "seen":
 		runSeen()
 		return 0
+	case "notify":
+		return runNotify(args[1:], stdin, stderr)
 	}
-	fmt.Fprintln(stderr, "usage: ccm [hook <event> | seen]")
+	fmt.Fprintln(stderr, "usage: ccm [hook <event> | seen | notify [--test] | setup | doctor]")
 	return 2
 }
 
@@ -94,9 +102,70 @@ func runHook(event string, stdin io.Reader) {
 			return ord.Alias(key), ord.Status(key)
 		},
 	}
+	cfg, err := config.Load(paths.ConfigPath())
+	if err != nil {
+		logf("config: %v", err)
+	}
+	if cfg.Notify.Banner || cfg.Notify.Sound {
+		d.Notify = spawnNotify
+		d.MinTurn = time.Duration(cfg.Notify.MinTurnSeconds) * time.Second
+	}
 	if err := hook.Run(event, stdin, d); err != nil {
 		logf("hook %s: %v", event, err)
 	}
+}
+
+// spawnNotify lanza "ccm notify" en su propia sesión y no lo espera: el aviso
+// (sonido, esperar el click en Linux) no puede demorar a Claude Code. El
+// request va por un pipe ya escrito y cerrado, porque el hook sale enseguida y
+// no puede quedar una goroutine copiando stdin.
+func spawnNotify(r notify.Request) {
+	self, err := os.Executable()
+	if err != nil {
+		logf("notify: %v", err)
+		return
+	}
+	b, _ := json.Marshal(r)
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		logf("notify: %v", err)
+		return
+	}
+	_, _ = pw.Write(b)
+	pw.Close()
+	defer pr.Close()
+	cmd := exec.Command(self, "notify")
+	cmd.Stdin = pr
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := cmd.Start(); err != nil {
+		logf("notify: %v", err)
+		return
+	}
+	_ = cmd.Process.Release()
+}
+
+func runNotify(args []string, stdin io.Reader, stderr io.Writer) int {
+	cfg, err := config.Load(paths.ConfigPath())
+	if err != nil {
+		logf("config: %v", err)
+	}
+	if len(args) > 0 && args[0] == "--test" {
+		r := notify.Request{Kind: notify.Finished, PaneID: os.Getenv("TMUX_PANE"), Folder: "ccm", Body: "Notifications work. Click to jump to this pane."}
+		if err := notify.Send(r, cfg.Notify); err != nil {
+			fmt.Fprintln(stderr, "ccm:", err)
+			return 1
+		}
+		return 0
+	}
+	var r notify.Request
+	if err := json.NewDecoder(stdin).Decode(&r); err != nil {
+		logf("notify: %v", err)
+		return 0
+	}
+	if err := notify.Send(r, cfg.Notify); err != nil {
+		logf("notify: %v", err)
+	}
+	return 0
 }
 
 func runSeen() {
