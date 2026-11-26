@@ -4,10 +4,12 @@
 //	ccm hook <evento> lo llaman los hooks de Claude Code
 //	ccm seen          lo llaman los hooks de tmux al cambiar de window
 //	ccm notify        manda un aviso (lo lanza el hook; --test para probar)
+//	ccm setup         instala los hooks de Claude Code y el bloque de tmux
 package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +29,7 @@ import (
 	"github.com/jstrah00/ccmcli/internal/paths"
 	"github.com/jstrah00/ccmcli/internal/proc"
 	"github.com/jstrah00/ccmcli/internal/remote"
+	"github.com/jstrah00/ccmcli/internal/setup"
 	"github.com/jstrah00/ccmcli/internal/state"
 	"github.com/jstrah00/ccmcli/internal/tmux"
 	"github.com/jstrah00/ccmcli/internal/transcript"
@@ -54,6 +57,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 0
 	case "notify":
 		return runNotify(args[1:], stdin, stderr)
+	case "setup":
+		return runSetup(args[1:], stdout, stderr)
 	}
 	fmt.Fprintln(stderr, "usage: ccm [hook <event> | seen | notify [--test] | setup | doctor]")
 	return 2
@@ -120,7 +125,7 @@ func runHook(event string, stdin io.Reader) {
 // request va por un pipe ya escrito y cerrado, porque el hook sale enseguida y
 // no puede quedar una goroutine copiando stdin.
 func spawnNotify(r notify.Request) {
-	self, err := os.Executable()
+	bin, err := os.Executable()
 	if err != nil {
 		logf("notify: %v", err)
 		return
@@ -134,7 +139,7 @@ func spawnNotify(r notify.Request) {
 	_, _ = pw.Write(b)
 	pw.Close()
 	defer pr.Close()
-	cmd := exec.Command(self, "notify")
+	cmd := exec.Command(bin, "notify")
 	cmd.Stdin = pr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
@@ -164,6 +169,45 @@ func runNotify(args []string, stdin io.Reader, stderr io.Writer) int {
 	}
 	if err := notify.Send(r, cfg.Notify); err != nil {
 		logf("notify: %v", err)
+	}
+	return 0
+}
+
+func self() (string, error) {
+	p, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.EvalSymlinks(p)
+}
+
+func runSetup(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	o := setup.Options{}
+	fs.BoolVar(&o.DryRun, "dry-run", false, "show what would change without writing")
+	fs.StringVar(&o.Settings, "settings", setup.SettingsPath(), "Claude Code settings.json")
+	fs.StringVar(&o.TmuxConf, "tmux-conf", setup.TmuxConfPath(), "tmux config file")
+	fs.StringVar(&o.Key, "key", setup.DefaultKey, "tmux key (no prefix) that opens ccm")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	bin, err := self()
+	if err != nil {
+		fmt.Fprintln(stderr, "ccm:", err)
+		return 1
+	}
+	o.Bin = bin
+	o.Source = func(path string) error {
+		t, err := tmux.Find()
+		if err != nil {
+			return err
+		}
+		return exec.Command(t, "source-file", path).Run()
+	}
+	if err := setup.Run(o, stdout); err != nil {
+		fmt.Fprintln(stderr, "ccm:", err)
+		return 1
 	}
 	return 0
 }
