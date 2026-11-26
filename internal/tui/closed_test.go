@@ -83,7 +83,7 @@ func TestClosedOpens(t *testing.T) {
 		t.Fatalf("mode=%v filas=%q", m.mode, closedIDs(m))
 	}
 	v := m.View()
-	for _, want := range []string{"Cerradas · 3", "arreglá el login", "Header nuevo", "popup", "hace 4m"} {
+	for _, want := range []string{"Closed · 3", "arreglá el login", "Header nuevo", "popup", "4m ago"} {
 		if !strings.Contains(v, want) {
 			t.Errorf("la vista no contiene %q:\n%s", want, v)
 		}
@@ -101,7 +101,7 @@ func TestClosedFuzzy(t *testing.T) {
 		t.Fatalf("sin query -> %q", closedIDs(m))
 	}
 	m = typeText(m, "zzz")
-	if closedIDs(m) != "" || !strings.Contains(m.View(), "sin resultados") {
+	if closedIDs(m) != "" || !strings.Contains(m.View(), "no results") {
 		t.Fatalf("zzz -> %q\n%s", closedIDs(m), m.View())
 	}
 }
@@ -185,7 +185,7 @@ func TestClosedResumeError(t *testing.T) {
 func TestClosedEmpty(t *testing.T) {
 	h, m := setupClosed(nil)
 	m = press(m, "c")
-	if !strings.Contains(m.View(), "todavía no hay sesiones cerradas") {
+	if !strings.Contains(m.View(), "no closed sessions yet") {
 		t.Fatalf("vista:\n%s", m.View())
 	}
 	if m = press(m, "enter"); len(h.resumed) != 0 || m.quitting {

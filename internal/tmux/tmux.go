@@ -42,7 +42,7 @@ func ParsePanes(out string) ([]PaneInfo, error) {
 		}
 		f := strings.Split(line, "\t")
 		if len(f) != 9 {
-			return nil, fmt.Errorf("línea de list-panes inesperada: %q", line)
+			return nil, fmt.Errorf("unexpected list-panes line: %q", line)
 		}
 		w, err := strconv.Atoi(f[2])
 		if err != nil {
@@ -74,7 +74,7 @@ func Find() (string, error) {
 			return p, nil
 		}
 	}
-	return "", errors.New("tmux no encontrado")
+	return "", errors.New("tmux not found")
 }
 
 type Exec struct {
@@ -129,7 +129,7 @@ func one(out string) (PaneInfo, error) {
 		return PaneInfo{}, err
 	}
 	if len(ps) != 1 {
-		return PaneInfo{}, fmt.Errorf("esperaba un pane, llegaron %d", len(ps))
+		return PaneInfo{}, fmt.Errorf("expected one pane, got %d", len(ps))
 	}
 	return ps[0], nil
 }

@@ -38,7 +38,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	switch args[0] {
 	case "hook":
 		if len(args) < 2 {
-			logf("hook sin evento")
+			logf("hook without event")
 			return 0
 		}
 		runHook(args[1], stdin)
@@ -47,7 +47,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		runSeen()
 		return 0
 	}
-	fmt.Fprintln(stderr, "uso: ccm [hook <evento> | seen]")
+	fmt.Fprintln(stderr, "usage: ccm [hook <event> | seen]")
 	return 2
 }
 
@@ -112,7 +112,7 @@ func runSeen() {
 
 func runTUI(stderr io.Writer) int {
 	if os.Getenv("TMUX") == "" {
-		fmt.Fprintln(stderr, "ccm: hay que correrlo dentro de tmux")
+		fmt.Fprintln(stderr, "ccm: must run inside tmux")
 		return 1
 	}
 	bin, err := tmux.Find()

@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/jstrah00/ccmcli/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jstrah00/ccmcli/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Go 1.24+" src="https://img.shields.io/badge/go-1.24%2B-00ADD8?logo=go&logoColor=white">
   <img alt="tmux" src="https://img.shields.io/badge/tmux-popup-1BB91F?logo=tmux&logoColor=white">
   <img alt="Linux and macOS" src="https://img.shields.io/badge/linux%20%7C%20macOS-555">
@@ -16,26 +17,7 @@
 
 When you run several Claude Code sessions in parallel, spread across tmux sessions and windows, `ccm` tells you at a glance which one is waiting for you, which one finished and which one is still working. `C-g` + a number and you're there.
 
-```
-                ▄▀▀ ▄▀▀ █▄ ▄█  ▄▀▀ █   █
-                ▀▄▄ ▀▄▄ █ ▀ █  ▀▄▄ █▄▄ █
-               6 sesiones · 1 ●  1 ✔  1 ⠼
-
-        Sesión            Status     Conversación
- ▌ homelab                                    1
-▎  1 ✔  :1                en review  Cambios pendientes por pushear
-
- ▌ stow_dotfiles                              1
-   2 ●  :1                           Sesión de test
-
- ▌ personal                                   1
-   3 ⠼  :1 ccmcli                    Rediseñar el header
- ────────────────────────────────────────────
- arreglá el login · terminó · hace 12m
-  j/k mover  ⏎ ir  / filtrar  r renombrar  dr renombrar de cero  s status  ds borrar status  dd ocultar  p pegar  U restaurar  c cerradas  q salir
-```
-
-> The UI is currently in Spanish. The keys are the same in any language.
+<p align="center"><img src="docs/demo/demo.gif" alt="ccm demo" width="900"></p>
 
 - **Live status** for every session: waiting for input, working, finished and unseen, idle.
 - **Jump by number** to the exact session, window and pane.
@@ -134,7 +116,7 @@ set-hook -g client-session-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
 ## Troubleshooting
 
 - **No sessions show up:** `tmux list-panes -a -F '#{pane_current_command}'` must show `claude` or a version number (`2.1.280`). If it shows `node` or something else, `ccm` won't detect them.
-- **`ccm: hay que correrlo dentro de tmux`:** the TUI needs `$TMUX`; open it with the `bind-key` above.
+- **`ccm: must run inside tmux`:** the TUI needs `$TMUX`; open it with the `bind-key` above.
 - **A session stays at `?`:** no hook has fired for it yet. Send it a prompt.
 - **Hook error log:** `~/.cache/ccm/log`.
 
@@ -145,6 +127,8 @@ git clone https://github.com/jstrah00/ccmcli && cd ccmcli
 go test ./...
 go install ./cmd/ccm
 ```
+
+The demo GIF is reproducible: `docs/demo/setup.sh && vhs docs/demo/demo.tape` (uses its own tmux server and fake sessions).
 
 ## License
 

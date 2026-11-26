@@ -38,7 +38,7 @@ type Deps struct {
 	Labels  func(key string) (alias, status string)
 }
 
-var ErrUnknownEvent = errors.New("evento desconocido")
+var ErrUnknownEvent = errors.New("unknown event")
 
 func Run(event string, stdin io.Reader, d Deps) error {
 	var host string

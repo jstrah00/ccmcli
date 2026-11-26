@@ -16,7 +16,7 @@ func TestHookNeverWritesOutputAndExitsZero(t *testing.T) {
 		{"stdin vacío", "%9", "prompt", ""},
 		{"json roto", "%9", "tool-done", "{roto"},
 		{"sin pane", "", "prompt", `{"session_id":"s"}`},
-		{"evento desconocido", "%9", "nope", "{}"},
+		{"unknown event", "%9", "nope", "{}"},
 		{"sin evento", "%9", "", ""},
 	}
 	for _, c := range cases {

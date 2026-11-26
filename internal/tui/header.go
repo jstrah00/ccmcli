@@ -75,9 +75,9 @@ func (m Model) topRight() string {
 	case m.filter != "":
 		return styleTitle.Render("/" + m.filter)
 	case len(m.list) == 1:
-		return styleDim.Render("1 sesión")
+		return styleDim.Render("1 session")
 	default:
-		return styleDim.Render(fmt.Sprintf("%d sesiones", len(m.list)))
+		return styleDim.Render(fmt.Sprintf("%d sessions", len(m.list)))
 	}
 }
 

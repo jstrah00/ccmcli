@@ -26,7 +26,7 @@ func TestViewHeadersIndicatorsAndDetail(t *testing.T) {
 	_, m := setup(w, d, i, u)
 	v := sized(m, 80, 20).View()
 	for _, s := range []string{" a", " b", "●", "✔", "○", "?", " 1 ", " 4 ", "t-x",
-		"titulo actual · esperando input · hace 3m"} {
+		"titulo actual · waiting for input · 3m ago"} {
 		if !strings.Contains(v, s) {
 			t.Errorf("falta %q en:\n%s", s, v)
 		}
@@ -38,7 +38,7 @@ func TestViewDetailShowsLastPrompt(t *testing.T) {
 	e.State, e.Detail, e.LastPrompt = state.Working, "titulo actual", "arreglá el login"
 	_, m := setup(e)
 	v := sized(m, 80, 10).View()
-	if !strings.Contains(v, "arreglá el login · trabajando · hace 3m") || strings.Contains(v, "titulo actual") {
+	if !strings.Contains(v, "arreglá el login · working · 3m ago") || strings.Contains(v, "titulo actual") {
 		t.Fatalf("detalle incorrecto:\n%s", v)
 	}
 }
@@ -48,7 +48,7 @@ func TestViewDetailFallsBackToRowTitleAndHidesTimeForUnknown(t *testing.T) {
 	u.State = state.Unknown
 	_, m := setup(u)
 	v := sized(m, 80, 10).View()
-	if !strings.Contains(v, "t-x · desconocido") || strings.Contains(v, "hace") {
+	if !strings.Contains(v, "t-x · unknown") || strings.Contains(v, " ago") {
 		t.Fatalf("detalle incorrecto:\n%s", v)
 	}
 }
@@ -107,7 +107,7 @@ func TestViewFilterShownInTitle(t *testing.T) {
 
 func TestViewEmpty(t *testing.T) {
 	_, m := setup()
-	if !strings.Contains(m.View(), "sin sesiones de Claude Code") {
+	if !strings.Contains(m.View(), "no Claude Code sessions") {
 		t.Fatal("falta el mensaje de lista vacía")
 	}
 }
@@ -141,7 +141,7 @@ func TestHeaderBigShowsCenteredLogoAndSummaryBelow(t *testing.T) {
 		t.Fatalf("logo no centrado:\n%q\n%q", l[0], l[1])
 	}
 	sum := l[2]
-	for _, s := range []string{"5 sesiones", "1 ●", "2 ✔", "1 " + spinnerFrames[0]} {
+	for _, s := range []string{"5 sessions", "1 ●", "2 ✔", "1 " + spinnerFrames[0]} {
 		if !strings.Contains(sum, s) {
 			t.Fatalf("falta %q en el resumen: %q", s, sum)
 		}
@@ -155,7 +155,7 @@ func TestHeaderBigShowsCenteredLogoAndSummaryBelow(t *testing.T) {
 	if d := left - right; d < -1 || d > 1 {
 		t.Fatalf("resumen no centrado (izq %d, der %d): %q", left, right, sum)
 	}
-	if strings.TrimSpace(l[3]) != "" || !strings.HasPrefix(strings.TrimSpace(l[4]), "Sesión") ||
+	if strings.TrimSpace(l[3]) != "" || !strings.HasPrefix(strings.TrimSpace(l[4]), "Session") ||
 		strings.Contains(l[5], "─") ||
 		!strings.HasPrefix(strings.TrimSpace(l[5]), "▌ a ") || !strings.HasSuffix(strings.TrimSpace(l[5]), " 5") {
 		t.Fatalf("esperaba línea en blanco, columnas y encabezado:\n%q\n%q\n%q", l[3], l[4], l[5])
@@ -164,7 +164,7 @@ func TestHeaderBigShowsCenteredLogoAndSummaryBelow(t *testing.T) {
 
 func TestHeaderSingular(t *testing.T) {
 	_, m := setup(mk("a", 1, "x"))
-	if v := sized(m, 80, 20).View(); !strings.Contains(v, "1 sesión") || strings.Contains(v, "1 sesiones") {
+	if v := sized(m, 80, 20).View(); !strings.Contains(v, "1 session") || strings.Contains(v, "1 sessions") {
 		t.Fatalf("singular:\n%s", v)
 	}
 }
@@ -173,7 +173,7 @@ func TestHeaderFilterReplacesTotal(t *testing.T) {
 	_, m := states4()
 	m = press(sized(m, 80, 20), "/", "d")
 	l := lines(m.View())
-	if !strings.Contains(l[2], "/d") || strings.Contains(l[2], "sesiones") {
+	if !strings.Contains(l[2], "/d") || strings.Contains(l[2], "sessions") {
 		t.Fatalf("filtro en el header: %q", l[2])
 	}
 }
@@ -209,7 +209,7 @@ func TestHeaderBigKeepsHeightAndWidth(t *testing.T) {
 
 func TestHeaderShownWhenEmpty(t *testing.T) {
 	_, m := setup()
-	if v := sized(m, 80, 20).View(); !strings.Contains(v, "▄▀▀") || !strings.Contains(v, "0 sesiones") {
+	if v := sized(m, 80, 20).View(); !strings.Contains(v, "▄▀▀") || !strings.Contains(v, "0 sessions") {
 		t.Fatalf("vacío sin header:\n%s", v)
 	}
 }
@@ -224,7 +224,7 @@ func TestViewAliasReplacesLocationAndRenameInput(t *testing.T) {
 		t.Fatalf("alias no reemplaza la ubicación:\n%s", v)
 	}
 	v = press(m, "r", "z").View()
-	if !strings.Contains(v, "nombre: backendz▏") || !strings.Contains(v, "guardar") {
+	if !strings.Contains(v, "name: backendz▏") || !strings.Contains(v, "save") {
 		t.Fatalf("falta el input de renombre:\n%s", v)
 	}
 }
@@ -243,7 +243,7 @@ func TestViewStatusColumnOnlyWhenSomeHasStatus(t *testing.T) {
 	a, b := mk("a", 1, "x"), mk("a", 2, "y")
 	h, m := setup(a, b)
 	m = sized(m, 80, 12)
-	if v := m.View(); strings.Contains(v, "Status") || !strings.Contains(v, "Conversación") {
+	if v := m.View(); strings.Contains(v, "Status") || !strings.Contains(v, "Conversation") {
 		t.Fatalf("columna status sin statuses:\n%s", v)
 	}
 	h.ord.SetStatus(b.Key, "en review")

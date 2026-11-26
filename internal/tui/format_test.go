@@ -16,11 +16,11 @@ import (
 
 func TestHumanSince(t *testing.T) {
 	cases := map[time.Duration]string{
-		-5 * time.Second: "hace 0s",
-		12 * time.Second: "hace 12s",
-		3 * time.Minute:  "hace 3m",
-		2 * time.Hour:    "hace 2h",
-		49 * time.Hour:   "hace 2d",
+		-5 * time.Second: "0s ago",
+		12 * time.Second: "12s ago",
+		3 * time.Minute:  "3m ago",
+		2 * time.Hour:    "2h ago",
+		49 * time.Hour:   "2d ago",
 	}
 	for d, want := range cases {
 		if got := humanSince(d); got != want {
@@ -47,7 +47,7 @@ func TestIndicatorPerState(t *testing.T) {
 }
 
 func TestStateLabel(t *testing.T) {
-	if stateLabel(state.Waiting) != "esperando input" || stateLabel(state.Unknown) != "desconocido" {
+	if stateLabel(state.Waiting) != "waiting for input" || stateLabel(state.Unknown) != "unknown" {
 		t.Fatal("etiquetas incorrectas")
 	}
 }

@@ -16,11 +16,11 @@ type keyHelp struct{ key, desc string }
 
 var (
 	normalHelp = []keyHelp{
-		{"j/k", "mover"}, {"⏎", "ir"}, {"/", "filtrar"}, {"r", "renombrar"}, {"dr", "renombrar de cero"}, {"s", "status"}, {"ds", "borrar status"},
-		{"dd", "ocultar"}, {"p", "pegar"}, {"U", "restaurar"}, {"c", "cerradas"}, {"q", "salir"},
+		{"j/k", "move"}, {"⏎", "go"}, {"/", "filter"}, {"r", "rename"}, {"dr", "rename fresh"}, {"s", "status"}, {"ds", "clear status"},
+		{"dd", "hide"}, {"p", "paste"}, {"U", "restore"}, {"c", "closed"}, {"q", "quit"},
 	}
-	filterHelp = []keyHelp{{"⏎", "aceptar"}, {"esc", "limpiar"}, {"↑/↓", "mover"}}
-	editHelp   = []keyHelp{{"⏎", "guardar"}, {"esc", "cancelar"}, {"", "vacío borra"}}
+	filterHelp = []keyHelp{{"⏎", "accept"}, {"esc", "clear"}, {"↑/↓", "move"}}
+	editHelp   = []keyHelp{{"⏎", "save"}, {"esc", "cancel"}, {"", "empty clears"}}
 )
 
 const minLocWidth = 16
@@ -81,8 +81,8 @@ func (m Model) View() string {
 	}
 
 	if len(m.list) == 0 {
-		b.WriteString(styleDim.Render(fit("  sin sesiones de Claude Code", m.width)) + "\n")
-		b.WriteString(styleDim.Render(fit(" q salir", m.width)))
+		b.WriteString(styleDim.Render(fit("  no Claude Code sessions", m.width)) + "\n")
+		b.WriteString(styleDim.Render(fit(" q quit", m.width)))
 		return b.String()
 	}
 
@@ -125,11 +125,11 @@ func (m Model) remoteW() int {
 }
 
 func (m Model) columnsLine(locW, stW int) string {
-	s := strings.Repeat(" ", m.prefixW()) + fit("Sesión", locW) + "  "
+	s := strings.Repeat(" ", m.prefixW()) + fit("Session", locW) + "  "
 	if stW > 0 {
 		s += fit(statusTitle, stW) + "  "
 	}
-	return styleCols.Render(fit(s+"Conversación", m.width))
+	return styleCols.Render(fit(s+"Conversation", m.width))
 }
 
 // sessionHeader: "▌ sesión", con la cantidad de entradas alineada a la derecha.
@@ -222,7 +222,7 @@ func (m Model) detailLine() string {
 	}
 	switch m.mode {
 	case renaming:
-		return styleSel.Render(fit(" nombre: "+m.input+"▏", m.width))
+		return styleSel.Render(fit(" name: "+m.input+"▏", m.width))
 	case editingStatus:
 		return styleSel.Render(fit(" status: "+m.input+"▏", m.width))
 	}

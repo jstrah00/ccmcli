@@ -36,7 +36,7 @@ func Load(path string) (*Store, error) {
 	}
 	var s Store
 	if err := json.Unmarshal(b, &s); err != nil {
-		return &Store{}, fmt.Errorf("order.json corrupto: %w", err)
+		return &Store{}, fmt.Errorf("corrupt order.json: %w", err)
 	}
 	return &s, nil
 }

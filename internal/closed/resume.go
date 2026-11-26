@@ -17,7 +17,7 @@ type Tmux interface {
 	Switch(p tmux.PaneInfo) error
 }
 
-var ErrBadSession = errors.New("session id inválido")
+var ErrBadSession = errors.New("invalid session id")
 
 // El id se tipea en un shell: closed.json es editable a mano.
 var safeID = regexp.MustCompile(`^[0-9A-Za-z_-]+$`)
@@ -30,7 +30,7 @@ func Resume(c Session, t Tmux) (tmux.PaneInfo, error) {
 		return tmux.PaneInfo{}, ErrBadSession
 	}
 	if fi, err := os.Stat(c.Cwd); err != nil || !fi.IsDir() {
-		return tmux.PaneInfo{}, fmt.Errorf("la carpeta ya no existe: %s", c.Cwd)
+		return tmux.PaneInfo{}, fmt.Errorf("folder no longer exists: %s", c.Cwd)
 	}
 	session := c.TmuxSession
 	if session == "" || !t.HasSession(session) {

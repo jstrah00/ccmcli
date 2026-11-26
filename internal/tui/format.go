@@ -68,15 +68,15 @@ func indicatorParts(st state.State, frame int) (lipgloss.Style, string) {
 func stateLabel(st state.State) string {
 	switch st {
 	case state.Waiting:
-		return "esperando input"
+		return "waiting for input"
 	case state.Working:
-		return "trabajando"
+		return "working"
 	case state.Done:
-		return "terminó"
+		return "finished"
 	case state.Idle:
 		return "idle"
 	default:
-		return "desconocido"
+		return "unknown"
 	}
 }
 
@@ -86,13 +86,13 @@ func humanSince(d time.Duration) string {
 	}
 	switch {
 	case d < time.Minute:
-		return fmt.Sprintf("hace %ds", int(d.Seconds()))
+		return fmt.Sprintf("%ds ago", int(d.Seconds()))
 	case d < time.Hour:
-		return fmt.Sprintf("hace %dm", int(d.Minutes()))
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
 	case d < 24*time.Hour:
-		return fmt.Sprintf("hace %dh", int(d.Hours()))
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	default:
-		return fmt.Sprintf("hace %dd", int(d.Hours()/24))
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
 	}
 }
 

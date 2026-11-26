@@ -16,7 +16,7 @@ import (
 	"github.com/jstrah00/ccmcli/internal/order"
 )
 
-var closedHelp = []keyHelp{{"↑/↓", "mover"}, {"⏎", "retomar"}, {"esc", "volver"}}
+var closedHelp = []keyHelp{{"↑/↓", "move"}, {"⏎", "resume"}, {"esc", "back"}}
 
 const ageWidth = 9
 
@@ -156,7 +156,7 @@ func (m Model) closedStatus() string {
 	if m.query != "" {
 		n = fmt.Sprintf("%d/%d", len(m.closedShown), len(m.closedAll))
 	}
-	return styleTitle.Render("Cerradas") + styleDim.Render(" · "+n)
+	return styleTitle.Render("Closed") + styleDim.Render(" · "+n)
 }
 
 func (m Model) closedViewRender() string {
@@ -165,7 +165,7 @@ func (m Model) closedViewRender() string {
 		b.WriteString(l + "\n")
 	}
 	if m.query == "" {
-		b.WriteString(styleDim.Render(fit(" > escribí para buscar", m.width)) + "\n")
+		b.WriteString(styleDim.Render(fit(" > type to search", m.width)) + "\n")
 	} else {
 		b.WriteString(styleSel.Render(fit(" > "+m.query+"▏", m.width)) + "\n")
 	}
@@ -174,10 +174,10 @@ func (m Model) closedViewRender() string {
 	n := 0
 	switch {
 	case len(m.closedAll) == 0:
-		b.WriteString(styleDim.Render(fit("  todavía no hay sesiones cerradas", m.width)) + "\n")
+		b.WriteString(styleDim.Render(fit("  no closed sessions yet", m.width)) + "\n")
 		n++
 	case len(m.closedShown) == 0:
-		b.WriteString(styleDim.Render(fit("  sin resultados", m.width)) + "\n")
+		b.WriteString(styleDim.Render(fit("  no results", m.width)) + "\n")
 		n++
 	default:
 		sessW, locW := m.closedWidths()
@@ -281,7 +281,7 @@ func (m Model) closedDetail() string {
 		return ""
 	}
 	s := m.closedShown[m.ccursor].s
-	line := styleDim.Render(" " + s.LastPrompt + " · cerrada " + humanSince(m.d.Now().Sub(s.ClosedAt)))
+	line := styleDim.Render(" " + s.LastPrompt + " · closed " + humanSince(m.d.Now().Sub(s.ClosedAt)))
 	if s.Status != "" {
 		line = " " + styleStatus.Render(s.Status) + styleDim.Render(" ·") + line
 	}
