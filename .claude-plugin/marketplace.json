@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "ccmcli",
+  "owner": {
+    "name": "jstrah00",
+    "url": "https://github.com/jstrah00"
+  },
+  "metadata": {
+    "description": "ccm: a tmux popup for your Claude Code sessions"
+  },
+  "plugins": [
+    {
+      "name": "ccm",
+      "source": "./",
+      "description": "Sets up ccm: a tmux popup (C-g) that lists your Claude Code sessions with live status, plus desktop notifications that jump to the right pane when clicked.",
+      "category": "productivity",
+      "tags": ["tmux", "notifications", "sessions"]
+    }
+  ]
+}

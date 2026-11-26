@@ -15,7 +15,7 @@
 
 ## Why
 
-When you run several Claude Code sessions in parallel, spread across tmux sessions and windows, `ccm` tells you at a glance which one is waiting for you, which one finished and which one is still working. `C-g` + a number and you're there.
+When you run several Claude Code sessions in parallel, spread across tmux sessions and windows, `ccm` tells you at a glance which one is waiting for you, which one finished and which one is still working. Press **`Ctrl+g`** anywhere in tmux, then a number, and you're there. When a session needs you while you're looking elsewhere, a desktop notification tells you, and clicking it takes you to that pane.
 
 <p align="center"><img src="docs/demo/demo.gif" alt="ccm demo" width="900"></p>
 
@@ -23,6 +23,7 @@ When you run several Claude Code sessions in parallel, spread across tmux sessio
 - **Jump by number** to the exact session, window and pane.
 - **Your own order, names and status notes**, kept between openings.
 - **Closed sessions** with fuzzy search: press `Enter` to resume one where it was, with its name and status.
+- **Notifications** when a session needs input or finishes a long turn; click one to jump to its pane (macOS and Linux).
 - **Remote-control** sessions marked with a breathing `◉`.
 - **Cheap:** the hook takes 3–7 ms, never writes to stdout and never breaks Claude Code.
 
@@ -62,38 +63,98 @@ Order, hidden entries and names persist between openings.
 
 ## Install
 
-Requirements: tmux, Go ≥ 1.24, Claude Code. Works on Linux and macOS.
+### Requirements
 
-**1. Binary**
+- **tmux 3.2+** (for `display-popup`). ccm only sees Claude Code sessions running inside tmux.
+- **Go 1.24+** to build it.
+- **Claude Code.**
+- **Notifications (optional):** on macOS, [`terminal-notifier`](https://github.com/julienXX/terminal-notifier) (`brew install terminal-notifier`) so clicking a notification jumps to the pane; without it you still get the banner via `osascript`, but the click does nothing. On Linux, `notify-send` (`libnotify-bin` / `libnotify`).
+
+Works on macOS and Linux.
+
+### Quick setup with Claude Code
+
+ccm ships as a Claude Code plugin with a setup skill. In Claude Code:
+
+```
+/plugin install ccm --marketplace jstrah00/ccmcli
+/ccm:setup
+```
+
+(On older Claude Code: `/plugin marketplace add jstrah00/ccmcli`, then `/plugin install ccm@ccmcli`.)
+
+The skill checks the requirements, installs the binary, wires the hooks and the `Ctrl+g` shortcut, sends a test notification and tells you what's left. It asks before installing anything or touching your files.
+
+### Manual setup
 
 ```sh
-go install github.com/jstrah00/ccmcli/cmd/ccm@latest   # → ~/go/bin/ccm
+go install github.com/jstrah00/ccmcli/cmd/ccm@latest
+~/go/bin/ccm setup --dry-run   # see what will change
+~/go/bin/ccm setup
+~/go/bin/ccm doctor --notify   # check everything and send a test notification
 ```
 
-**2. Claude Code hooks:** add to `"hooks"` in `~/.claude/settings.json` (they add up to the ones you already have):
+Then restart your open Claude Code sessions (hooks load when a session starts) and press **`Ctrl+g`** inside tmux.
+
+`ccm setup` is safe to run again, e.g. after updating ccm:
+
+- **Claude Code hooks:** adds 8 hooks to `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR/settings.json`) pointing at the installed binary. Other hooks and settings are left alone, key order included, and the previous file is saved as `settings.json.bak-ccm`.
+- **tmux:** adds a block to `~/.config/tmux/tmux.conf` (or `~/.tmux.conf`) and reloads tmux:
+
+  ```tmux
+  # >>> ccm >>>
+  bind-key -n C-g display-popup -E -h "60%" -w "80%" "/Users/you/go/bin/ccm"
+  set-hook -g session-window-changed[42] 'run-shell -b "/Users/you/go/bin/ccm seen"'
+  set-hook -g client-session-changed[42] 'run-shell -b "/Users/you/go/bin/ccm seen"'
+  # <<< ccm <<<
+  ```
+
+  `Ctrl+g` works without the tmux prefix. To use another key: `ccm setup --key M-g`. Other flags: `--settings PATH`, `--tmux-conf PATH`.
+
+<details>
+<summary>What the hooks look like in <code>settings.json</code></summary>
 
 ```json
-"SessionStart":     [{"hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook start"}]}],
-"UserPromptSubmit": [{"hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook prompt"}]}],
-"PreToolUse":       [{"matcher": "AskUserQuestion", "hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook ask"}]}],
-"PostToolUse":      [{"hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook tool-done"}]}],
+"SessionStart":     [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook start"}]}],
+"UserPromptSubmit": [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook prompt"}]}],
+"PreToolUse":       [{"matcher": "AskUserQuestion", "hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook ask"}]}],
+"PostToolUse":      [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook tool-done"}]}],
 "Notification": [
-  {"matcher": "permission_prompt", "hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook permission"}]},
-  {"matcher": "idle_prompt",       "hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook idle"}]}
+  {"matcher": "permission_prompt", "hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook permission"}]},
+  {"matcher": "idle_prompt",       "hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook idle"}]}
 ],
-"Stop":             [{"hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook stop"}]}],
-"SessionEnd":       [{"hooks": [{"type": "command", "command": "$HOME/go/bin/ccm hook end"}]}]
+"Stop":             [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook stop"}]}],
+"SessionEnd":       [{"hooks": [{"type": "command", "command": "/Users/you/go/bin/ccm hook end"}]}]
+```
+</details>
+
+## Notifications
+
+| When | Notification | Sound (macOS) |
+|---|---|---|
+| Claude asks for permission or asks you a question | **Needs your input** + the request | Sosumi |
+| A turn that took 10 s or more finishes | **Finished** + Claude's last message | Glass |
+
+- **No notification if you're already looking at that pane** (its window is active in an attached session), and none for quick turns.
+- **Title:** `session:window/folder`. A new notification from the same session replaces the previous one.
+- **Click:** on macOS (with `terminal-notifier`) it brings your terminal to the front and runs `tmux switch-client` to that pane. On Linux, the notification has a *Go to session* action that switches tmux to the pane; raising the terminal window is up to your desktop.
+- **Which terminal comes to the front (macOS):** detected from the terminal that started the tmux server (`__CFBundleIdentifier`, or `TERM_PROGRAM` as a fallback), so Ghostty, iTerm2, Terminal, WezTerm, kitty, Alacritty, Warp and VS Code work without config. Set `terminal_bundle` if it picks the wrong one.
+- **Fast:** the hook hands the notification to a detached `ccm notify` process and returns right away.
+
+Optional config in `~/.config/ccm/config.json` (or `$XDG_CONFIG_HOME/ccm/config.json`), shown with the defaults:
+
+```json
+{
+  "notify": {
+    "banner": true,
+    "sound": true,
+    "min_turn_seconds": 10,
+    "terminal_bundle": ""
+  }
+}
 ```
 
-**3. tmux:** add to your `tmux.conf` and reload it (`tmux source-file ~/.config/tmux/tmux.conf`):
-
-```tmux
-bind-key -n C-g display-popup -E -h "60%" -w "80%" "$HOME/go/bin/ccm"
-set-hook -g session-window-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
-set-hook -g client-session-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
-```
-
-**4.** Restart your open Claude Code sessions so they pick up the hooks.
+First notification on macOS: allow it in **System Settings → Notifications → terminal-notifier**. Pick the "Alerts" style if you want it to stay on screen until you click it.
 
 ## How it works
 
@@ -102,7 +163,8 @@ set-hook -g client-session-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
 - **List:** `tmux list-panes`, filtered to the panes running Claude Code (`claude`, or a version like `2.1.280` with the native binary), joined with those JSON files.
 - **Closed:** `ccm hook end` and the cleanup of dead panes record them in `~/.local/state/ccm/closed.json` (last 50, only those that got at least one prompt). Resuming opens a window in the tmux session it was in (or the current one if that's gone) and types `claude --resume <id>` into a shell, so the shell stays when you quit Claude. It gets back its name and status, and leaves the list once it starts.
 - **Titles:** from each session's transcript, read incrementally.
-- **Order, names and status notes:** `~/.local/state/ccm/order.json`. `XDG_CACHE_HOME` and `XDG_STATE_HOME` are respected.
+- **Order, names and status notes:** `~/.local/state/ccm/order.json`. `XDG_CACHE_HOME`, `XDG_STATE_HOME` and `XDG_CONFIG_HOME` are respected.
+- **Notifications:** `stop`, `permission` and `ask` decide whether to notify (see [Notifications](#notifications)) and start `ccm notify` detached.
 - **Remote-control:** `~/.claude/sessions/*.json` (or `$CLAUDE_CONFIG_DIR/sessions`).
 
 ## Commands
@@ -112,13 +174,25 @@ set-hook -g client-session-changed 'run-shell -b "$HOME/go/bin/ccm seen"'
 | `ccm` | opens the TUI (meant for `display-popup`) |
 | `ccm hook <event>` | called by Claude Code hooks: `start`, `prompt`, `ask`, `permission`, `tool-done`, `idle`, `stop`, `end` |
 | `ccm seen` | called by tmux hooks when you switch window or session |
+| `ccm setup [--dry-run] [--key K] [--settings P] [--tmux-conf P]` | installs the Claude Code hooks and the tmux block |
+| `ccm doctor [--notify]` | checks the install; `--notify` sends a test notification |
+| `ccm notify [--test]` | sends a notification (run by the hook; `--test` to try it) |
 
 ## Troubleshooting
 
+Start with **`ccm doctor --notify`**: it checks tmux, the hooks, the tmux block, the notifier and duplicate notification hooks, and tells you how to fix each one.
+
 - **No sessions show up:** `tmux list-panes -a -F '#{pane_current_command}'` must show `claude` or a version number (`2.1.280`). If it shows `node` or something else, `ccm` won't detect them.
-- **`ccm: must run inside tmux`:** the TUI needs `$TMUX`; open it with the `bind-key` above.
+- **`ccm: must run inside tmux`:** the TUI needs `$TMUX`; open it with `Ctrl+g` inside tmux.
+- **`Ctrl+g` does nothing:** reload tmux (`tmux source-file ~/.config/tmux/tmux.conf`) and check nothing later in your config rebinds `C-g` (`tmux list-keys -T root C-g`).
+- **No notifications:** run `ccm notify --test`. On macOS, allow `terminal-notifier` in System Settings → Notifications. Quick turns (under `min_turn_seconds`) and the pane you're looking at don't notify, on purpose.
+- **Double notifications:** another hook (your own script, another plugin) also notifies on `Stop`/`Notification`; `ccm doctor` lists them.
 - **A session stays at `?`:** no hook has fired for it yet. Send it a prompt.
 - **Hook error log:** `~/.cache/ccm/log`.
+
+## Uninstall
+
+Remove the `# >>> ccm >>>` block from your tmux config and the hooks ending in `ccm hook <event>` from `settings.json`, then delete the binary and, if you want, `~/.cache/ccm`, `~/.local/state/ccm` and `~/.config/ccm`. In Claude Code, `/plugin uninstall ccm`.
 
 ## Development
 

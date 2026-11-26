@@ -1,0 +1,13 @@
+{
+  "name": "ccm",
+  "version": "0.2.0",
+  "description": "Sets up ccm: a tmux popup (C-g) that lists your Claude Code sessions with live status, plus desktop notifications that jump to the right pane when clicked.",
+  "author": {
+    "name": "jstrah00",
+    "url": "https://github.com/jstrah00"
+  },
+  "homepage": "https://github.com/jstrah00/ccmcli",
+  "repository": "https://github.com/jstrah00/ccmcli",
+  "license": "MIT",
+  "keywords": ["tmux", "notifications", "sessions"]
+}
