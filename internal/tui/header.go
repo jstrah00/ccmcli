@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"ccm/internal/state"
+	"github.com/jstrah00/ccmcli/internal/state"
 )
 
 // "CCM CLI" con medios bloques: 2 líneas de alto, 24 columnas.

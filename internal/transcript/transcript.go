@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ccm/internal/fsutil"
+	"github.com/jstrah00/ccmcli/internal/fsutil"
 )
 
 type Titles struct {

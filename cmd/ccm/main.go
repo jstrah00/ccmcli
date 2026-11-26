@@ -14,17 +14,17 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ccm/internal/closed"
-	"ccm/internal/entries"
-	"ccm/internal/hook"
-	"ccm/internal/order"
-	"ccm/internal/paths"
-	"ccm/internal/proc"
-	"ccm/internal/remote"
-	"ccm/internal/state"
-	"ccm/internal/tmux"
-	"ccm/internal/transcript"
-	"ccm/internal/tui"
+	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/entries"
+	"github.com/jstrah00/ccmcli/internal/hook"
+	"github.com/jstrah00/ccmcli/internal/order"
+	"github.com/jstrah00/ccmcli/internal/paths"
+	"github.com/jstrah00/ccmcli/internal/proc"
+	"github.com/jstrah00/ccmcli/internal/remote"
+	"github.com/jstrah00/ccmcli/internal/state"
+	"github.com/jstrah00/ccmcli/internal/tmux"
+	"github.com/jstrah00/ccmcli/internal/transcript"
+	"github.com/jstrah00/ccmcli/internal/tui"
 )
 
 func main() {

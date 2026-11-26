@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	"ccm/internal/fsutil"
+	"github.com/jstrah00/ccmcli/internal/fsutil"
 )
 
 // Key identifica una entrada entre reinicios de tmux y /clear de CC.

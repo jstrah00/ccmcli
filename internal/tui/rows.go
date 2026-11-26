@@ -1,6 +1,6 @@
 package tui
 
-import "ccm/internal/entries"
+import "github.com/jstrah00/ccmcli/internal/entries"
 
 const (
 	rowHeader = -1

@@ -6,7 +6,7 @@ import (
 	"os"
 	"regexp"
 
-	"ccm/internal/tmux"
+	"github.com/jstrah00/ccmcli/internal/tmux"
 )
 
 type Tmux interface {

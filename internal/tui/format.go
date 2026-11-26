@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
 
-	"ccm/internal/entries"
-	"ccm/internal/state"
+	"github.com/jstrah00/ccmcli/internal/entries"
+	"github.com/jstrah00/ccmcli/internal/state"
 )
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}

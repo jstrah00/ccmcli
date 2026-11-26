@@ -1,4 +1,4 @@
-module ccm
+module github.com/jstrah00/ccmcli
 
 go 1.24.10
 

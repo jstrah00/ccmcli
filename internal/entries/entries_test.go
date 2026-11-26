@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"ccm/internal/closed"
-	"ccm/internal/state"
-	"ccm/internal/tmux"
-	"ccm/internal/transcript"
+	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/state"
+	"github.com/jstrah00/ccmcli/internal/tmux"
+	"github.com/jstrah00/ccmcli/internal/transcript"
 )
 
 var t0 = time.Date(2026, 9, 23, 22, 0, 0, 0, time.UTC)

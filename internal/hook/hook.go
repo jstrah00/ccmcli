@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"ccm/internal/closed"
-	"ccm/internal/order"
-	"ccm/internal/proc"
-	"ccm/internal/state"
-	"ccm/internal/tmux"
+	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/order"
+	"github.com/jstrah00/ccmcli/internal/proc"
+	"github.com/jstrah00/ccmcli/internal/state"
+	"github.com/jstrah00/ccmcli/internal/tmux"
 )
 
 // Input son los campos que usamos del JSON que Claude Code manda por stdin.
@@ -196,7 +196,7 @@ func finished(d Deps) state.State {
 }
 
 // UserPromptSubmit también dispara cuando el harness inyecta un aviso como si
-// fuera un prompt tuyo. Misma regla que notify.sh.
+// fuera un prompt tuyo.
 func injected(prompt string) bool {
 	return strings.HasPrefix(prompt, "<task-notification>") ||
 		strings.HasPrefix(prompt, "<system-reminder>")

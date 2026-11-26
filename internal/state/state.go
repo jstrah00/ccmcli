@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"ccm/internal/fsutil"
+	"github.com/jstrah00/ccmcli/internal/fsutil"
 )
 
 type State string

@@ -12,8 +12,8 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/sahilm/fuzzy"
 
-	"ccm/internal/closed"
-	"ccm/internal/order"
+	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/order"
 )
 
 var closedHelp = []keyHelp{{"↑/↓", "mover"}, {"⏎", "retomar"}, {"esc", "volver"}}

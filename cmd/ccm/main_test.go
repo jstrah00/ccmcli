@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"ccm/internal/paths"
-	"ccm/internal/state"
+	"github.com/jstrah00/ccmcli/internal/paths"
+	"github.com/jstrah00/ccmcli/internal/state"
 )
 
 func TestHookNeverWritesOutputAndExitsZero(t *testing.T) {

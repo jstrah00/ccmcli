@@ -7,11 +7,11 @@ import (
 	"regexp"
 	"time"
 
-	"ccm/internal/closed"
-	"ccm/internal/order"
-	"ccm/internal/state"
-	"ccm/internal/tmux"
-	"ccm/internal/transcript"
+	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/order"
+	"github.com/jstrah00/ccmcli/internal/state"
+	"github.com/jstrah00/ccmcli/internal/tmux"
+	"github.com/jstrah00/ccmcli/internal/transcript"
 )
 
 type Entry struct {

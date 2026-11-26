@@ -9,11 +9,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/sahilm/fuzzy"
 
-	"ccm/internal/closed"
-	"ccm/internal/entries"
-	"ccm/internal/order"
-	"ccm/internal/tmux"
-	"ccm/internal/transcript"
+	"github.com/jstrah00/ccmcli/internal/closed"
+	"github.com/jstrah00/ccmcli/internal/entries"
+	"github.com/jstrah00/ccmcli/internal/order"
+	"github.com/jstrah00/ccmcli/internal/tmux"
+	"github.com/jstrah00/ccmcli/internal/transcript"
 )
 
 type Deps struct {

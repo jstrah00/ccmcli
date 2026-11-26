@@ -8,8 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"ccm/internal/entries"
-	"ccm/internal/state"
+	"github.com/jstrah00/ccmcli/internal/entries"
+	"github.com/jstrah00/ccmcli/internal/state"
 )
 
 func sized(m Model, w, h int) Model { return send(m, tea.WindowSizeMsg{Width: w, Height: h}) }

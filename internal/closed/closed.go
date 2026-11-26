@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"ccm/internal/fsutil"
-	"ccm/internal/state"
+	"github.com/jstrah00/ccmcli/internal/fsutil"
+	"github.com/jstrah00/ccmcli/internal/state"
 )
 
 const Max = 50
