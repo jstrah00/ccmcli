@@ -5,6 +5,7 @@
 //	ccm seen          lo llaman los hooks de tmux al cambiar de window
 //	ccm notify        manda un aviso (lo lanza el hook; --test para probar)
 //	ccm setup         instala los hooks de Claude Code y el bloque de tmux
+//	ccm doctor        revisa la instalación (--notify manda un aviso de prueba)
 package main
 
 import (
@@ -15,6 +16,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +25,7 @@ import (
 
 	"github.com/jstrah00/ccmcli/internal/closed"
 	"github.com/jstrah00/ccmcli/internal/config"
+	"github.com/jstrah00/ccmcli/internal/doctor"
 	"github.com/jstrah00/ccmcli/internal/entries"
 	"github.com/jstrah00/ccmcli/internal/hook"
 	"github.com/jstrah00/ccmcli/internal/notify"
@@ -59,6 +63,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runNotify(args[1:], stdin, stderr)
 	case "setup":
 		return runSetup(args[1:], stdout, stderr)
+	case "doctor":
+		return runDoctor(args[1:], stdin, stdout, stderr)
 	}
 	fmt.Fprintln(stderr, "usage: ccm [hook <event> | seen | notify [--test] | setup | doctor]")
 	return 2
@@ -207,6 +213,48 @@ func runSetup(args []string, stdout, stderr io.Writer) int {
 	}
 	if err := setup.Run(o, stdout); err != nil {
 		fmt.Fprintln(stderr, "ccm:", err)
+		return 1
+	}
+	return 0
+}
+
+func runDoctor(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	bin, err := self()
+	if err != nil {
+		fmt.Fprintln(stderr, "ccm:", err)
+		return 1
+	}
+	cfg, cfgErr := config.Load(paths.ConfigPath())
+	e := doctor.Env{
+		SettingsPath: setup.SettingsPath(),
+		TmuxConfPath: setup.TmuxConfPath(),
+		Bin:          bin,
+		GOOS:         runtime.GOOS,
+		Bundle:       notify.Bundle(cfg.Notify.TerminalBundle, os.Getenv),
+		ConfigErr:    cfgErr,
+		Look: func(name string) string {
+			return notify.Find(name, "/opt/homebrew/bin/"+name, "/usr/local/bin/"+name)
+		},
+	}
+	e.Settings, _ = os.ReadFile(e.SettingsPath)
+	if len(e.Settings) == 0 {
+		e.Settings = []byte("{}")
+	}
+	conf, _ := os.ReadFile(e.TmuxConfPath)
+	e.TmuxConf = string(conf)
+	if t, err := tmux.Find(); err == nil {
+		out, _ := exec.Command(t, "-V").Output()
+		e.TmuxVersion = strings.TrimSpace(string(out))
+	}
+	report, ok := doctor.Print(doctor.Run(e))
+	fmt.Fprint(stdout, report)
+	if len(args) > 0 && args[0] == "--notify" {
+		fmt.Fprintln(stdout, "sending a test notification…")
+		if code := runNotify([]string{"--test"}, stdin, stderr); code != 0 {
+			return code
+		}
+	}
+	if !ok {
 		return 1
 	}
 	return 0

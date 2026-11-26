@@ -30,7 +30,7 @@ func StrayLines(conf string) []int {
 	inside := false
 	for i, l := range strings.Split(conf, "\n") {
 		switch strings.TrimSpace(l) {
-		case blockStart:
+		case BlockStart:
 			inside = true
 			continue
 		case blockEnd:
@@ -53,12 +53,28 @@ func readOptional(p string) ([]byte, bool, error) {
 }
 
 // write sigue symlinks a propósito (dotfiles con stow): un rename atómico
-// reemplazaría el symlink por un archivo.
-func write(p string, b []byte) error {
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+// reemplazaría el symlink por un archivo. Conserva los permisos de like (el
+// archivo original), o usa 0600 si no existe.
+func write(p string, b []byte, like string) error {
+	mode := os.FileMode(0o600)
+	if fi, err := os.Stat(like); err == nil {
+		mode = fi.Mode().Perm()
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(p, b, 0o644)
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(b); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Chmod(p, mode)
 }
 
 func Run(o Options, out io.Writer) error {
@@ -86,11 +102,11 @@ func Run(o Options, out io.Writer) error {
 	} else {
 		if !o.DryRun {
 			if existed {
-				if err := write(o.Settings+".bak-ccm", settings); err != nil {
+				if err := write(o.Settings+".bak-ccm", settings, o.Settings); err != nil {
 					return err
 				}
 			}
-			if err := write(o.Settings, merged); err != nil {
+			if err := write(o.Settings, merged, o.Settings); err != nil {
 				return err
 			}
 		}
@@ -113,7 +129,7 @@ func Run(o Options, out io.Writer) error {
 		fmt.Fprintf(out, "· tmux already set up in %s (%s opens ccm)\n", o.TmuxConf, o.Key)
 	} else {
 		if !o.DryRun {
-			if err := write(o.TmuxConf, []byte(newConf)); err != nil {
+			if err := write(o.TmuxConf, []byte(newConf), o.TmuxConf); err != nil {
 				return err
 			}
 		}

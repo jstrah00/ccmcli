@@ -42,7 +42,8 @@ func TestBundlePrecedence(t *testing.T) {
 	}
 	for prog, want := range map[string]string{
 		"ghostty": "com.mitchellh.ghostty", "iTerm.app": "com.googlecode.iterm2", "Apple_Terminal": "com.apple.Terminal",
-		"WezTerm": "com.github.wez.wezterm", "kitty": "net.kovidgoyal.kitty", "tmux": "",
+		"WezTerm": "com.github.wez.wezterm", "kitty": "net.kovidgoyal.kitty", "WarpTerminal": "dev.warp.Warp-Stable",
+		"vscode": "com.microsoft.VSCode", "tmux": "",
 	} {
 		if b := Bundle("", env(map[string]string{"TERM_PROGRAM": prog})); b != want {
 			t.Fatalf("%s: %q", prog, b)

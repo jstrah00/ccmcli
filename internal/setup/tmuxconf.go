@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	blockStart = "# >>> ccm >>>"
+	BlockStart = "# >>> ccm >>>"
 	blockEnd   = "# <<< ccm <<<"
 )
 
@@ -47,12 +47,12 @@ bind-key -n %s display-popup -E -h "60%%" -w "80%%" "%s"
 set-hook -g session-window-changed[42] 'run-shell -b "%s seen"'
 set-hook -g client-session-changed[42] 'run-shell -b "%s seen"'
 %s
-`, blockStart, key, bin, bin, bin, blockEnd)
+`, BlockStart, key, bin, bin, bin, blockEnd)
 }
 
 // MergeTmux agrega el bloque de ccm al final, o reemplaza el que ya esté.
 func MergeTmux(conf, block string) (string, bool) {
-	i := strings.Index(conf, blockStart)
+	i := strings.Index(conf, BlockStart)
 	j := strings.Index(conf, blockEnd)
 	var out string
 	if i >= 0 && j > i {

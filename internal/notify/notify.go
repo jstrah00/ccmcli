@@ -51,6 +51,8 @@ var terminals = map[string]string{
 	"Apple_Terminal": "com.apple.Terminal",
 	"WezTerm":        "com.github.wez.wezterm",
 	"kitty":          "net.kovidgoyal.kitty",
+	"WarpTerminal":   "dev.warp.Warp-Stable",
+	"vscode":         "com.microsoft.VSCode",
 }
 
 // Bundle es la app que el click trae al frente. Dentro de tmux TERM_PROGRAM

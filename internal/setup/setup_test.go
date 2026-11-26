@@ -244,3 +244,19 @@ func readFile(t *testing.T, p string) string {
 	}
 	return string(b)
 }
+
+func TestRunKeepsFileModes(t *testing.T) {
+	dir := t.TempDir()
+	o := Options{Bin: bin, Settings: dir + "/settings.json", TmuxConf: dir + "/tmux.conf", Key: "C-g"}
+	if err := os.WriteFile(o.Settings, []byte(`{}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Run(o, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{o.Settings, o.Settings + ".bak-ccm"} {
+		if fi, _ := os.Stat(p); fi.Mode().Perm() != 0o600 {
+			t.Fatalf("%s: %v", p, fi.Mode().Perm())
+		}
+	}
+}
